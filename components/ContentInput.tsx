@@ -147,10 +147,10 @@ export default function ContentInput() {
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto px-4 md:px-0">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Speed Reader</h1>
-          <p className="text-gray-400 text-lg">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Speed Reader</h1>
+          <p className="text-gray-400 text-sm md:text-lg">
             Rapid Serial Visual Presentation with Optimal Recognition Point
           </p>
         </div>
@@ -206,7 +206,7 @@ export default function ContentInput() {
                 onChange={(e) => setTextInput(e.target.value)}
                 onKeyDown={handleTextareaKeyDown}
                 placeholder="Paste your text here..."
-                className="w-full h-64 bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none select-text"
+                className="w-full h-64 bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none select-text text-sm md:text-base"
                 style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
               />
               {textInput && (
@@ -277,7 +277,7 @@ export default function ContentInput() {
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               placeholder="https://example.com/article"
-              className="w-full bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 mb-4"
+              className="w-full bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 mb-4 text-sm md:text-base"
             />
             <button
               onClick={handleURLSubmit}

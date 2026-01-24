@@ -83,11 +83,11 @@ export default function PageView() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Full Text View</h1>
+          <h1 className="text-xl md:text-2xl font-bold">Full Text View</h1>
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('reading')}
@@ -106,7 +106,7 @@ export default function PageView() {
 
         {/* Text content */}
         <div className="prose prose-invert max-w-none">
-          <div className="text-lg leading-relaxed whitespace-pre-wrap">
+          <div className="text-sm md:text-lg leading-relaxed whitespace-pre-wrap">
             {renderText()}
           </div>
         </div>

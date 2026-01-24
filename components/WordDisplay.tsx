@@ -40,19 +40,19 @@ export default function WordDisplay({ word }: WordDisplayProps) {
       >
         {/* Left side - text before anchor, right-aligned to meet the center */}
         <div className="flex-1 flex justify-end">
-          <span className="text-white text-7xl font-serif tracking-wide select-none">
+          <span className="text-white text-6xl md:text-7xl font-serif tracking-wide select-none">
             {beforeAnchor}
           </span>
         </div>
         
         {/* Anchor character - always at exact center */}
-        <span className="text-red-500 text-7xl font-serif tracking-wide select-none">
+        <span className="text-red-500 text-6xl md:text-7xl font-serif tracking-wide select-none">
           {anchorChar}
         </span>
         
         {/* Right side - text after anchor, left-aligned from center */}
         <div className="flex-1 flex justify-start">
-          <span className="text-white text-7xl font-serif tracking-wide select-none">
+          <span className="text-white text-6xl md:text-7xl font-serif tracking-wide select-none">
             {afterAnchor}
           </span>
         </div>
