@@ -116,11 +116,11 @@ export default function PageView() {
           <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-800">
             <p className="text-sm text-gray-400 mb-2">Current Position:</p>
             <p className="text-lg">
-              Word {currentIndex + 1} of {processedWords.length}: "
+              Word {currentIndex + 1} of {processedWords.length}: &quot;
               <span className="text-yellow-300 font-semibold">
                 {processedWords[currentIndex]?.text}
               </span>
-              "
+              &quot;
             </p>
             <p className="text-sm text-gray-500 mt-2">
               Click any word to jump to that position

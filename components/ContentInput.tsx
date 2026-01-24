@@ -298,7 +298,7 @@ export default function ContentInput() {
             <li>• Adjust speed with the slider (100-1000 WPM)</li>
             <li>• Press Space to play/pause</li>
             <li>• Use arrow keys to navigate sentences</li>
-            <li>• Press ESC or click "Full Text View" to see the full document</li>
+            <li>• Press ESC or click &quot;Full Text View&quot; to see the full document</li>
           </ul>
         </div>
       </div>
