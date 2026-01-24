@@ -10,32 +10,32 @@ Right now, you're reading at 300 words per minute. Notice how your eyes aren't m
 This technique is called Rapid Serial Visual Presentation. It was developed by researchers who discovered something fascinating. Your eyes spend most of your reading time jumping from word to word. Not actually reading.
 Those tiny movements are called saccades. They take up nearly half your reading time. By eliminating them, you instantly double your speed without losing comprehension.
 Now here's where it gets interesting. Let's bump you up to 400 words per minute.
-[Speed increases]
+
 Feel that? You're now reading twice as fast as average. And you're understanding everything. Your brain is processing complete thoughts, not individual words.
 The red character you see in each word isn't random. It's positioned at the Optimal Recognition Point. This is where your eye naturally wants to fixate to recognize a word fastest.
 For short words, it's near the beginning. For longer words, it's slightly off-center. This is based on decades of eye-tracking research.
 Let's push it further. We're going to 500 words per minute.
-[Speed increases]
+
 You're now in the top 10% of readers. Most people never experience reading at this speed. But here you are, comprehending everything.
 Notice something else. You're not getting tired. Traditional reading strains your eye muscles with constant movement. This method keeps your eyes relaxed and stationary.
 Some people worry they'll miss details at higher speeds. But studies show the opposite. When you read faster, you actually stay more focused. Your mind doesn't have time to wander.
 Think about the last book you read. How many times did you reach the bottom of a page and realize you weren't paying attention? You had to reread entire paragraphs.
 That doesn't happen here. Every word demands your attention for just a fraction of a second. Then it's gone. Your brain stays locked in.
-Ready for something wild? Let's try 600 words per minute.
-[Speed increases]
+wild? Let's try 600 words per minute.
+
 You're now reading a full-length novel in under three hours. The average reader takes eight to ten hours. Imagine what you could do with that time back.
 You could read fifty books a year instead of twelve. You could process work emails in minutes instead of hours. You could finally tackle that stack of articles you've been meaning to get to.
 But speed isn't the only benefit. Many people report better retention with this method. Because you're fully engaged, the information actually sticks.
 Traditional reading lets your mind drift. You might pronounce every word correctly but remember nothing. Active reading forces presence.
 Let's take it up one more notch. 700 words per minute.
-[Speed increases]
+
 This is three times faster than your old reading speed. You're processing seven thousand words in just ten minutes. That's an entire magazine article.
 At this pace, you could read the entire Harry Potter series in a weekend. War and Peace in two days. The complete works of Shakespeare in a week.
 But more importantly, you could stay on top of everything competing for your attention. The reports. The research papers. The newsletters. The books everyone's talking about.
 Information overload isn't a problem when you can process information three times faster.
 Now here's the question. Can you go even faster? Some people max out around 600 WPM. Others push past 1000. There's only one way to find out.
 Before we finish, let's drop back down to 300 WPM where we started.
-[Speed decreases]
+
 Notice how slow this feels now? This is the speed you thought was fast five minutes ago. Your brain has already adapted. It's craving more.
 That's the beautiful thing about speed reading. Once you experience it, normal reading feels like walking through mud.
 You've just read about 850 words in roughly three minutes. At your old speed, this would have taken over six minutes. You just saved yourself three minutes.
