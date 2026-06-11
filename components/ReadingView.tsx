@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useReadingStore } from '@/lib/store';
+import { trackEvent } from '@/lib/analytics';
 import WordDisplay from './WordDisplay';
 import ReadingControls from './ReadingControls';
 
@@ -23,6 +24,7 @@ export default function ReadingView() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const speedChangePointsRef = useRef<Map<number, number>>(new Map());
   const lastSpeedChangeRef = useRef<number>(-1);
+  const sessionCompletedRef = useRef(false);
 
   // Demo mode: detect if this is demo text and calculate speed change points
   useEffect(() => {
@@ -107,6 +109,10 @@ export default function ReadingView() {
         nextWord();
       } else {
         pause();
+        if (!sessionCompletedRef.current) {
+          sessionCompletedRef.current = true;
+          trackEvent('reading_session_completed');
+        }
       }
     }, currentWord.duration);
 

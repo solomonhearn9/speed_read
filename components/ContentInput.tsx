@@ -3,6 +3,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useReadingStore } from '@/lib/store';
 import { parseFile, scrapeURL } from '@/lib/contentParsers';
+import { useAuth } from '@/lib/auth-context';
+import { trackEvent } from '@/lib/analytics';
+import { countWords, truncateToWordLimit } from '@/lib/wordCount';
+import { incrementAnonSessionCount } from '@/lib/anonSessions';
+import AuthHeader from './AuthHeader';
+import UsageStatus from './UsageStatus';
+import WordLimitBanner from './WordLimitBanner';
+import AuthModal from './AuthModal';
+import UpgradeModal from './UpgradeModal';
 
 const DEMO_TEXT = `Let's see if you can keep up with this Speed Reading exercise. We'll kick things off at 300 WPM. The average person reads 200 to 240 words per minute, so let's see if you can beat that.
 The main trick with this kind of speed reading is quieting the voice in your head. This voice reads every single word out loud. That's the main habit that slows us all down. It's like taking training wheels off a bike. At first it feels strange, but soon you find your balance.
@@ -46,17 +55,33 @@ Your brain is capable of incredible things. You just proved it. The only questio
 Welcome to the future of reading.`;
 
 export default function ContentInput() {
-  const { setText, viewMode, play, setSpeed } = useReadingStore();
+  const { setText, play, setSpeed } = useReadingStore();
+  const { usage, user, refreshUsage } = useAuth();
   const [inputMethod, setInputMethod] = useState<'text' | 'file' | 'url'>('text');
   const [textInput, setTextInput] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wordLimitMessage, setWordLimitMessage] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit'>('pricing');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isFirstVisitRef = useRef(false);
+  const pasteTrackedRef = useRef(false);
 
-  // Check for first-time visitor and load demo
+  useEffect(() => {
+    trackEvent('landing_page_view');
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+      trackEvent('checkout_completed');
+      refreshUsage();
+      window.history.replaceState({}, '', '/');
+    }
+  }, [refreshUsage]);
+
   useEffect(() => {
     const hasVisited = localStorage.getItem('speed-reader-visited');
     if (!hasVisited) {
@@ -66,40 +91,148 @@ export default function ContentInput() {
     }
   }, []);
 
-  const handleTextSubmit = () => {
-    if (textInput.trim()) {
-      const isDemoText = textInput.trim().startsWith("Let's see if you can keep up with this Speed Reading exercise");
-      setText(textInput);
-      setError(null);
-      
-      // Auto-start demo for first-time visitors
-      if (isDemoText && isFirstVisitRef.current) {
-        setTimeout(() => {
-          setSpeed(300);
-          play();
-        }, 100);
-      }
+  const checkSessionLimit = (): boolean => {
+    if (usage.isUnlimited) return true;
+
+    if (usage.tier === 'anonymous' && usage.sessionsUsed >= usage.sessionsLimit) {
+      trackEvent('session_limit_hit');
+      setShowAuthModal(true);
+      return false;
     }
+
+    if (usage.tier === 'free' && usage.sessionsUsed >= usage.sessionsLimit) {
+      trackEvent('session_limit_hit');
+      setUpgradeReason('session_limit');
+      setShowUpgradeModal(true);
+      return false;
+    }
+
+    return true;
+  };
+
+  const recordSession = async (): Promise<boolean> => {
+    if (usage.isUnlimited) return true;
+
+    if (user) {
+      const res = await fetch('/api/sessions/start', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.error === 'session_limit') {
+          trackEvent('session_limit_hit');
+          setUpgradeReason('session_limit');
+          setShowUpgradeModal(true);
+          return false;
+        }
+      }
+      await refreshUsage();
+      return res.ok;
+    }
+
+    incrementAnonSessionCount();
+    await refreshUsage();
+    return true;
+  };
+
+  const applyWordLimit = (text: string): string => {
+    if (usage.isUnlimited) {
+      setWordLimitMessage(null);
+      return text;
+    }
+
+    const wordCount = countWords(text);
+    if (wordCount <= usage.wordLimit) {
+      setWordLimitMessage(null);
+      return text;
+    }
+
+    trackEvent('word_limit_hit', { wordCount, limit: usage.wordLimit });
+
+    if (usage.tier === 'anonymous') {
+      setWordLimitMessage(
+        "You're reading the first 500 words. Sign up free to unlock 1,500 words/session or upgrade for unlimited."
+      );
+    } else {
+      setWordLimitMessage(
+        "You're reading the first 1,500 words. Upgrade for unlimited reading."
+      );
+    }
+
+    return truncateToWordLimit(text, usage.wordLimit);
+  };
+
+  const startReading = async (text: string, isDemo = false) => {
+    if (!text.trim()) return;
+
+    trackEvent('start_reading_clicked');
+
+    if (!checkSessionLimit()) return;
+
+    const limitedText = applyWordLimit(text);
+    const sessionRecorded = await recordSession();
+    if (!sessionRecorded) return;
+
+    const isDemoText = limitedText.trim().startsWith("Let's see if you can keep up with this Speed Reading exercise");
+    setText(limitedText);
+    setError(null);
+    trackEvent('reading_session_started', { wordCount: countWords(limitedText) });
+
+    if ((isDemoText && isFirstVisitRef.current) || isDemo) {
+      setTimeout(() => {
+        setSpeed(300);
+        play();
+      }, 100);
+    }
+  };
+
+  const handleTextSubmit = () => {
+    startReading(textInput);
   };
 
   const handleClearText = () => {
     setTextInput('');
+    setWordLimitMessage(null);
     textareaRef.current?.focus();
   };
 
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Allow Cmd/Ctrl+A for select all
     if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
       e.preventDefault();
       textareaRef.current?.select();
     }
-    // Allow Cmd/Ctrl+C for copy
-    // Allow Cmd/Ctrl+V for paste
-    // Allow Cmd/Ctrl+X for cut
-    // These are handled by default browser behavior, no need to prevent
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setTextInput(e.target.value);
+    if (!pasteTrackedRef.current && e.target.value.length > 0) {
+      pasteTrackedRef.current = true;
+      trackEvent('paste_text_started');
+    }
+  };
+
+  const handleTabSwitch = (method: 'text' | 'file' | 'url') => {
+    if (method === 'file' && !usage.canUpload) {
+      trackEvent('upload_gate_viewed');
+      setUpgradeReason('upload');
+      setShowUpgradeModal(true);
+      return;
+    }
+    if (method === 'url' && !usage.canScrape) {
+      trackEvent('url_gate_viewed');
+      setUpgradeReason('url');
+      setShowUpgradeModal(true);
+      return;
+    }
+    setInputMethod(method);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!usage.canUpload) {
+      trackEvent('upload_gate_viewed');
+      setUpgradeReason('upload');
+      setShowUpgradeModal(true);
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -108,7 +241,7 @@ export default function ContentInput() {
 
     try {
       const text = await parseFile(file);
-      setText(text);
+      await startReading(text);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse file');
     } finally {
@@ -120,6 +253,13 @@ export default function ContentInput() {
   };
 
   const handleURLSubmit = async () => {
+    if (!usage.canScrape) {
+      trackEvent('url_gate_viewed');
+      setUpgradeReason('url');
+      setShowUpgradeModal(true);
+      return;
+    }
+
     if (!urlInput.trim()) {
       setError('Please enter a valid URL');
       return;
@@ -130,8 +270,8 @@ export default function ContentInput() {
 
     try {
       const text = await scrapeURL(urlInput);
-      setText(text);
       setUrlInput('');
+      await startReading(text);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to scrape URL');
     } finally {
@@ -139,15 +279,41 @@ export default function ContentInput() {
     }
   };
 
-  // Don't show input if we have content loaded
   const hasContent = useReadingStore((state) => state.processedWords.length > 0);
   if (hasContent) {
-    return null;
+    return (
+      <>
+        {wordLimitMessage && (
+          <div className="fixed top-0 left-0 right-0 z-30 p-2">
+            <WordLimitBanner
+              message={wordLimitMessage}
+              onUpgrade={usage.tier !== 'paid' ? () => {
+                setUpgradeReason('word_limit');
+                setShowUpgradeModal(true);
+              } : undefined}
+            />
+          </div>
+        )}
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason={upgradeReason}
+          onRequireAuth={() => {
+            setShowUpgradeModal(false);
+            setShowAuthModal(true);
+          }}
+        />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-3xl mx-auto px-4 md:px-0">
+      <AuthHeader />
+
+      <div className="max-w-3xl mx-auto px-4 md:px-0 pt-12">
+        <UsageStatus />
+
         <div className="mb-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Speed Reader</h1>
           <p className="text-gray-400 text-sm md:text-lg">
@@ -155,10 +321,9 @@ export default function ContentInput() {
           </p>
         </div>
 
-        {/* Input method tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-800">
           <button
-            onClick={() => setInputMethod('text')}
+            onClick={() => handleTabSwitch('text')}
             className={`px-4 py-2 font-medium transition-colors ${
               inputMethod === 'text'
                 ? 'text-white border-b-2 border-red-500'
@@ -168,7 +333,7 @@ export default function ContentInput() {
             Paste Text
           </button>
           <button
-            onClick={() => setInputMethod('file')}
+            onClick={() => handleTabSwitch('file')}
             className={`px-4 py-2 font-medium transition-colors ${
               inputMethod === 'file'
                 ? 'text-white border-b-2 border-red-500'
@@ -178,7 +343,7 @@ export default function ContentInput() {
             Upload File
           </button>
           <button
-            onClick={() => setInputMethod('url')}
+            onClick={() => handleTabSwitch('url')}
             className={`px-4 py-2 font-medium transition-colors ${
               inputMethod === 'url'
                 ? 'text-white border-b-2 border-red-500'
@@ -189,21 +354,29 @@ export default function ContentInput() {
           </button>
         </div>
 
-        {/* Error message */}
         {error && (
           <div className="mb-4 p-4 bg-red-900/30 border border-red-500 rounded-lg text-red-300">
             {error}
           </div>
         )}
 
-        {/* Text input */}
+        {wordLimitMessage && (
+          <WordLimitBanner
+            message={wordLimitMessage}
+            onUpgrade={() => {
+              setUpgradeReason('word_limit');
+              setShowUpgradeModal(true);
+            }}
+          />
+        )}
+
         {inputMethod === 'text' && (
           <div>
             <div className="relative">
               <textarea
                 ref={textareaRef}
                 value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
+                onChange={handleTextareaChange}
                 onKeyDown={handleTextareaKeyDown}
                 placeholder="Paste your text here..."
                 className="w-full h-64 bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none select-text text-sm md:text-base"
@@ -219,6 +392,13 @@ export default function ContentInput() {
                 </button>
               )}
             </div>
+            {!usage.isUnlimited && (
+              <p className="mt-2 text-xs text-gray-500 text-center">
+                {usage.tier === 'anonymous'
+                  ? 'Free: paste up to 500 words. Upgrade for unlimited reading, uploads, and URL scraping.'
+                  : 'Free: paste up to 1,500 words. Upgrade for unlimited reading, uploads, and URL scraping.'}
+              </p>
+            )}
             <button
               onClick={handleTextSubmit}
               disabled={!textInput.trim()}
@@ -229,7 +409,6 @@ export default function ContentInput() {
           </div>
         )}
 
-        {/* File upload */}
         {inputMethod === 'file' && (
           <div>
             <div className="border-2 border-dashed border-gray-800 rounded-lg p-12 text-center hover:border-gray-700 transition-colors">
@@ -244,6 +423,14 @@ export default function ContentInput() {
               <label
                 htmlFor="file-upload"
                 className="cursor-pointer flex flex-col items-center"
+                onClick={(e) => {
+                  if (!usage.canUpload) {
+                    e.preventDefault();
+                    trackEvent('upload_gate_viewed');
+                    setUpgradeReason('upload');
+                    setShowUpgradeModal(true);
+                  }
+                }}
               >
                 <svg
                   className="w-16 h-16 text-gray-600 mb-4"
@@ -262,14 +449,13 @@ export default function ContentInput() {
                   {isLoading ? 'Processing...' : 'Click to upload or drag and drop'}
                 </span>
                 <span className="text-sm text-gray-500">
-                  Supports PDF, DOCX, DOC, TXT files
+                  Supports PDF, DOCX, DOC, TXT files — Pro feature
                 </span>
               </label>
             </div>
           </div>
         )}
 
-        {/* URL input */}
         {inputMethod === 'url' && (
           <div>
             <input
@@ -289,7 +475,6 @@ export default function ContentInput() {
           </div>
         )}
 
-        {/* Instructions */}
         <div className="mt-12 p-6 bg-gray-900 rounded-lg border border-gray-800">
           <h2 className="text-xl font-semibold mb-4">How it works</h2>
           <ul className="space-y-2 text-gray-400">
@@ -302,7 +487,22 @@ export default function ContentInput() {
           </ul>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode="signup"
+      />
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason={upgradeReason}
+        onRequireAuth={() => {
+          setShowUpgradeModal(false);
+          setShowAuthModal(true);
+        }}
+      />
     </div>
   );
 }
-

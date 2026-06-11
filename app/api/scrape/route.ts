@@ -1,8 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getUserTier } from '@/lib/plans';
+import type { Profile } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const service = createServiceClient();
+      const { data: profile } = await service
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      const tier = getUserTier(true, profile as Profile | null);
+      if (tier !== 'paid') {
+        return NextResponse.json(
+          { error: 'URL scraping requires a Pro plan' },
+          { status: 403 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'URL scraping requires a Pro plan' },
+        { status: 403 }
+      );
+    }
+
     const { url } = await request.json();
 
     if (!url || typeof url !== 'string') {
