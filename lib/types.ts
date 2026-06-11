@@ -46,6 +46,7 @@ export type AnalyticsEventName =
   | 'url_gate_viewed'
   | 'word_limit_hit'
   | 'session_limit_hit'
+  | 'challenge_limit_hit'
   | 'share_clicked'
   | 'copy_link_clicked'
   | 'pricing_page_viewed'

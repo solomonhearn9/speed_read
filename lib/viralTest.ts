@@ -2,7 +2,28 @@ export const VIRAL_TEST_MARKER = '__VIRAL_READING_TEST__';
 
 export const VIRAL_TEST_DURATION_SEC = 30;
 
-export const VIRAL_TEST_WPM = 300;
+/** Progressive challenge speeds: easy start, ramp through the 30-second window. */
+export const VIRAL_TEST_SPEED_SCHEDULE: ReadonlyArray<{ wpm: number; durationSec: number }> = [
+  { wpm: 100, durationSec: 3 },
+  { wpm: 200, durationSec: 3 },
+  { wpm: 350, durationSec: 4 },
+  { wpm: 500, durationSec: 6 },
+  { wpm: 700, durationSec: 5 },
+  { wpm: 900, durationSec: 9 },
+];
+
+export const VIRAL_TEST_INITIAL_WPM = VIRAL_TEST_SPEED_SCHEDULE[0].wpm;
+
+export function getViralTestWpmAtElapsedMs(elapsedMs: number): number {
+  let cumulativeMs = 0;
+  for (const phase of VIRAL_TEST_SPEED_SCHEDULE) {
+    cumulativeMs += phase.durationSec * 1000;
+    if (elapsedMs < cumulativeMs) {
+      return phase.wpm;
+    }
+  }
+  return VIRAL_TEST_SPEED_SCHEDULE[VIRAL_TEST_SPEED_SCHEDULE.length - 1].wpm;
+}
 
 export const VIRAL_TEST_TEXT = `${VIRAL_TEST_MARKER}
 Your brain can read faster than you think. This is a thirty second speed reading challenge. Focus on the red letter in each word and let your peripheral vision handle the rest.
@@ -32,6 +53,24 @@ export function calculateViralTestWpm(wordsRead: number, durationSec: number): n
   return Math.round((wordsRead / durationSec) * 60);
 }
 
+/** Score is the speed tier reached in the challenge ramp, not words-per-minute throughput. */
+export function getViralTestScoreWpm(elapsedMs: number): number {
+  return getViralTestWpmAtElapsedMs(elapsedMs);
+}
+
+export function formatViralTestResultSummary(
+  wpm: number,
+  percentile: number,
+  wordsRead: number,
+  durationSec: number
+): string {
+  return `${wpm} WPM faster than ${percentile}% of readers · ${wordsRead} words in ${durationSec}s`;
+}
+
+export function getViralTestShareMessage(wpm: number, percentile: number): string {
+  return `${wpm} WPM faster than ${percentile}% of readers. Can you beat me?`;
+}
+
 const PERCENTILE_BREAKPOINTS: [number, number][] = [
   [100, 8],
   [150, 20],
@@ -45,6 +84,7 @@ const PERCENTILE_BREAKPOINTS: [number, number][] = [
   [500, 97],
   [600, 99],
   [800, 99],
+  [900, 99],
 ];
 
 export function calculatePercentile(wpm: number): number {
@@ -63,8 +103,4 @@ export function calculatePercentile(wpm: number): number {
   }
 
   return 50;
-}
-
-export function getViralTestShareMessage(wpm: number, percentile: number): string {
-  return `I scored ${wpm} WPM on the Speed Reader challenge — faster than ${percentile}% of readers. Can you beat me?`;
 }

@@ -5,7 +5,7 @@ import Modal from './Modal';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 
-type UpgradeReason = 'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit';
+type UpgradeReason = 'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit' | 'challenge_limit';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -34,6 +34,10 @@ const REASON_COPY: Record<UpgradeReason, { title: string; body: string }> = {
   session_limit: {
     title: 'Upgrade for unlimited sessions',
     body: 'You\'ve used all your sessions. Upgrade for unlimited reading anytime.',
+  },
+  challenge_limit: {
+    title: 'Unlock unlimited challenges',
+    body: 'You\'ve completed your 3 free 30-second challenges. Upgrade to keep playing and sharing your score.',
   },
 };
 

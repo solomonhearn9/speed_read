@@ -36,8 +36,25 @@ export default function ReadingControls({ viralSecondsRemaining }: ReadingContro
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm border-t border-gray-800 p-6">
-      <p className="text-center text-xs text-gray-500 uppercase tracking-widest mb-2">
-        wpm <span className="tabular-nums">{speedWPM}</span>
+      <p
+        className={`text-center uppercase tracking-widest mb-2 ${
+          isViralTest
+            ? 'text-sm text-white font-semibold'
+            : 'text-xs text-gray-500'
+        }`}
+      >
+        {isViralTest ? (
+          <>
+            <span className="text-gray-400 font-normal text-xs mr-2">Speed</span>
+            <span key={speedWPM} className="tabular-nums text-red-400 text-xl font-bold">
+              {speedWPM} WPM
+            </span>
+          </>
+        ) : (
+          <>
+            wpm <span className="tabular-nums">{speedWPM}</span>
+          </>
+        )}
       </p>
 
       {/* Progress bar */}

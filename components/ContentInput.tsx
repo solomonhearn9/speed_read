@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 import { countWords, truncateToWordLimit } from '@/lib/wordCount';
 import { incrementAnonSessionCount } from '@/lib/anonSessions';
+import { canStartViralTest, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
@@ -67,7 +68,7 @@ export default function ContentInput() {
   const [wordLimitMessage, setWordLimitMessage] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit'>('pricing');
+  const [upgradeReason, setUpgradeReason] = useState<'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit' | 'challenge_limit'>('pricing');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isFirstVisitRef = useRef(false);
@@ -229,6 +230,15 @@ export default function ContentInput() {
 
   const handleViralTest = () => {
     dismissAuthNotice();
+
+    if (!canStartViralTest(usage.isUnlimited)) {
+      trackEvent('challenge_limit_hit');
+      setUpgradeReason('challenge_limit');
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    incrementViralTestAttemptCount();
     trackEvent('viral_test_started');
     startViralTest();
     setError(null);

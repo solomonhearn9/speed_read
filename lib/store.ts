@@ -1,12 +1,11 @@
 import { create } from 'zustand';
 import { ProcessedWord, processText } from './textProcessor';
 import {
-  VIRAL_TEST_DURATION_SEC,
   VIRAL_TEST_TEXT,
-  VIRAL_TEST_WPM,
+  VIRAL_TEST_INITIAL_WPM,
   calculatePercentile,
-  calculateViralTestWpm,
   getViralTestPassage,
+  getViralTestScoreWpm,
 } from './viralTest';
 
 export type SessionMode = 'normal' | 'viral_test';
@@ -53,7 +52,7 @@ export interface ReadingState {
   jumpToWord: (index: number) => void;
   setSessionMode: (mode: SessionMode) => void;
   startViralTest: () => void;
-  completeViralTest: (wordsRead: number, durationSec?: number) => void;
+  completeViralTest: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => void;
   clearViralTestResults: () => void;
   reset: () => void;
 }
@@ -171,26 +170,26 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
 
   startViralTest: () => {
     const passage = getViralTestPassage(VIRAL_TEST_TEXT);
-    const words = processText(passage, VIRAL_TEST_WPM);
+    const words = processText(passage, VIRAL_TEST_INITIAL_WPM);
     set({
       rawText: passage,
       processedWords: words,
       currentIndex: 0,
       progress: 0,
       isPlaying: false,
-      speedWPM: VIRAL_TEST_WPM,
+      speedWPM: VIRAL_TEST_INITIAL_WPM,
       viewMode: 'reading',
       sessionMode: 'viral_test',
       viralTestResults: null,
     });
   },
 
-  completeViralTest: (wordsRead: number, durationSec = VIRAL_TEST_DURATION_SEC) => {
-    const wpm = calculateViralTestWpm(wordsRead, durationSec);
+  completeViralTest: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => {
+    const wpm = scoreWpm ?? getViralTestScoreWpm(elapsedSec * 1000);
     const percentile = calculatePercentile(wpm);
     set({
       isPlaying: false,
-      viralTestResults: { wpm, percentile, wordsRead, durationSec },
+      viralTestResults: { wpm, percentile, wordsRead, durationSec: elapsedSec },
     });
   },
 

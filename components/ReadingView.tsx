@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useReadingStore } from '@/lib/store';
 import { trackEvent } from '@/lib/analytics';
-import { VIRAL_TEST_DURATION_SEC } from '@/lib/viralTest';
+import { VIRAL_TEST_DURATION_SEC, getViralTestScoreWpm, getViralTestWpmAtElapsedMs } from '@/lib/viralTest';
 import WordDisplay from './WordDisplay';
 import ReadingControls from './ReadingControls';
 
@@ -33,7 +33,20 @@ export default function ReadingView() {
   const viralActiveMsRef = useRef(0);
   const viralPlayStartRef = useRef<number | null>(null);
   const viralTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const viralSpeedRef = useRef<number | null>(null);
+  const viralCompletingRef = useRef(false);
   const [viralSecondsRemaining, setViralSecondsRemaining] = useState(VIRAL_TEST_DURATION_SEC);
+
+  const finishViralTest = useCallback((elapsedMs: number) => {
+    if (viralCompletingRef.current || useReadingStore.getState().viralTestResults) return;
+    viralCompletingRef.current = true;
+
+    const wordsRead = useReadingStore.getState().currentIndex + 1;
+    const elapsedSec = Math.max(1, Math.round(elapsedMs / 1000));
+    const scoreWpm = getViralTestScoreWpm(elapsedMs);
+    trackEvent('viral_test_completed', { wordsRead, wpm: scoreWpm, durationSec: elapsedSec });
+    completeViralTest(wordsRead, elapsedSec, scoreWpm);
+  }, [completeViralTest]);
 
   // Viral test: track active reading time and end after 30 seconds
   useEffect(() => {
@@ -50,12 +63,14 @@ export default function ReadingView() {
         const remainingSec = Math.max(0, Math.ceil((VIRAL_TEST_DURATION_SEC * 1000 - elapsedMs) / 1000));
         setViralSecondsRemaining(remainingSec);
 
+        const targetWpm = getViralTestWpmAtElapsedMs(elapsedMs);
+        if (viralSpeedRef.current !== targetWpm) {
+          viralSpeedRef.current = targetWpm;
+          setSpeed(targetWpm);
+        }
+
         if (elapsedMs >= VIRAL_TEST_DURATION_SEC * 1000) {
-          const wordsRead = useReadingStore.getState().currentIndex + 1;
-          const durationSec = VIRAL_TEST_DURATION_SEC;
-          const wpm = Math.round((wordsRead / durationSec) * 60);
-          trackEvent('viral_test_completed', { wordsRead, wpm });
-          completeViralTest(wordsRead, durationSec);
+          finishViralTest(elapsedMs);
           return;
         }
 
@@ -70,6 +85,11 @@ export default function ReadingView() {
         clearTimeout(viralTimerRef.current);
         viralTimerRef.current = null;
       }
+
+      const elapsedMs = viralActiveMsRef.current;
+      if (elapsedMs > 0) {
+        finishViralTest(elapsedMs);
+      }
     }
 
     return () => {
@@ -78,12 +98,14 @@ export default function ReadingView() {
         viralTimerRef.current = null;
       }
     };
-  }, [sessionMode, isPlaying, viralTestResults, completeViralTest]);
+  }, [sessionMode, isPlaying, viralTestResults, finishViralTest, setSpeed]);
 
   useEffect(() => {
     if (sessionMode === 'viral_test' && !viralTestResults) {
       viralActiveMsRef.current = 0;
       viralPlayStartRef.current = null;
+      viralSpeedRef.current = null;
+      viralCompletingRef.current = false;
       setViralSecondsRemaining(VIRAL_TEST_DURATION_SEC);
     }
   }, [sessionMode, viralTestResults, processedWords.length]);
