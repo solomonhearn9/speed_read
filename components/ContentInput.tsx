@@ -56,7 +56,8 @@ Welcome to the future of reading.`;
 
 export default function ContentInput() {
   const { setText, play, setSpeed } = useReadingStore();
-  const { usage, user, refreshUsage } = useAuth();
+  const { usage, user, refreshUsage, refreshProfile } = useAuth();
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [inputMethod, setInputMethod] = useState<'text' | 'file' | 'url'>('text');
   const [textInput, setTextInput] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -80,7 +81,19 @@ export default function ContentInput() {
       refreshUsage();
       window.history.replaceState({}, '', '/');
     }
-  }, [refreshUsage]);
+    if (params.get('auth') === 'verified') {
+      refreshProfile();
+      setAuthNotice('Email verified! You are now logged in.');
+      window.history.replaceState({}, '', '/');
+    }
+    if (params.get('auth') === 'verification_failed') {
+      setAuthNotice(
+        'Email verification could not be completed. Try opening the link in the same browser where you signed up, or log in and resend the verification email.'
+      );
+      setShowAuthModal(true);
+      window.history.replaceState({}, '', '/');
+    }
+  }, [refreshUsage, refreshProfile]);
 
   useEffect(() => {
     const hasVisited = localStorage.getItem('speed-reader-visited');
@@ -353,6 +366,16 @@ export default function ContentInput() {
             URL Scrape
           </button>
         </div>
+
+        {authNotice && (
+          <div className={`mb-4 p-4 rounded-lg text-sm ${
+            authNotice.includes('verified')
+              ? 'bg-green-900/30 border border-green-500 text-green-300'
+              : 'bg-amber-900/30 border border-amber-500 text-amber-200'
+          }`}>
+            {authNotice}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-4 bg-red-900/30 border border-red-500 rounded-lg text-red-300">
