@@ -10,19 +10,28 @@ import {
 } from 'react';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
-import { getAuthRedirectUrl, isEmailConfirmed } from '@/lib/auth-utils';
+import {
+  getAuthRedirectUrl,
+  isEmailConfirmed,
+  mapAuthError,
+  UNVERIFIED_LOGIN_MESSAGE,
+} from '@/lib/auth-utils';
 import type { Profile, UsageInfo } from '@/lib/types';
 import { getUserTier, getUsageInfo } from '@/lib/plans';
 import { getAnonSessionCount } from '@/lib/anonSessions';
 
 export type SignUpResult =
-  | { error: string }
+  | { error: string; code: 'error' | 'rate_limited' }
   | { error: null; status: 'verification_required' }
   | { error: null; status: 'logged_in' };
 
 export type SignInResult =
-  | { error: string; status: 'error' | 'unverified' }
+  | { error: string; status: 'error' | 'unverified' | 'rate_limited' }
   | { error: null; status: 'logged_in' };
+
+export type ResendResult =
+  | { error: null }
+  | { error: string; code: 'error' | 'rate_limited' };
 
 interface AuthContextValue {
   user: User | null;
@@ -34,7 +43,7 @@ interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<SignUpResult>;
   signIn: (email: string, password: string) => Promise<SignInResult>;
   signOut: () => Promise<void>;
-  resendVerificationEmail: (email: string) => Promise<{ error: string | null }>;
+  resendVerificationEmail: (email: string) => Promise<ResendResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -165,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string): Promise<SignUpResult> => {
     const supabase = getSupabase();
-    if (!supabase) return { error: 'Auth is not configured' };
+    if (!supabase) return { error: 'Auth is not configured', code: 'error' };
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -175,7 +184,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    if (error) return { error: error.message };
+    if (error) {
+      const mapped = mapAuthError(error);
+      return {
+        error: mapped.message,
+        code: mapped.isRateLimited ? 'rate_limited' : 'error',
+      };
+    }
 
     if (!data.session) {
       await supabase.auth.signOut();
@@ -204,14 +219,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      return { error: error.message, status: 'error' };
+      const mapped = mapAuthError(error);
+      return {
+        error: mapped.message,
+        status: mapped.isRateLimited ? 'rate_limited' : 'error',
+      };
     }
 
     if (data.user && !isEmailConfirmed(data.user)) {
       await supabase.auth.signOut();
       clearAuthState();
       return {
-        error: 'Please verify your email before logging in.',
+        error: UNVERIFIED_LOGIN_MESSAGE,
         status: 'unverified',
       };
     }
@@ -224,9 +243,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: 'Login failed. Please try again.', status: 'error' };
   };
 
-  const resendVerificationEmail = async (email: string) => {
+  const resendVerificationEmail = async (email: string): Promise<ResendResult> => {
     const supabase = getSupabase();
-    if (!supabase) return { error: 'Auth is not configured' };
+    if (!supabase) return { error: 'Auth is not configured', code: 'error' };
 
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -236,7 +255,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    return { error: error?.message ?? null };
+    if (error) {
+      const mapped = mapAuthError(error);
+      return {
+        error: mapped.message,
+        code: mapped.isRateLimited ? 'rate_limited' : 'error',
+      };
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {
