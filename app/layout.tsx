@@ -5,6 +5,10 @@ import Providers from '@/components/Providers'
 export const metadata: Metadata = {
   title: 'Speed Reader - RSVP Reading Tool',
   description: 'Rapid Serial Visual Presentation speed reading application with Optimal Recognition Point',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({

@@ -57,7 +57,7 @@ Your brain is capable of incredible things. You just proved it. The only questio
 Welcome to the future of reading.`;
 
 export default function ContentInput() {
-  const { setText, play, setSpeed } = useReadingStore();
+  const { setText, play, setSpeed, startViralTest } = useReadingStore();
   const { usage, user, refreshUsage, refreshProfile } = useAuth();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [inputMethod, setInputMethod] = useState<'text' | 'file' | 'url'>('text');
@@ -130,8 +130,6 @@ export default function ContentInput() {
   useEffect(() => {
     const hasVisited = localStorage.getItem('speed-reader-visited');
     if (!hasVisited) {
-      setTextInput(DEMO_TEXT);
-      isFirstVisitRef.current = true;
       localStorage.setItem('speed-reader-visited', 'true');
     }
   }, []);
@@ -228,6 +226,14 @@ export default function ContentInput() {
         play();
       }, 100);
     }
+  };
+
+  const handleViralTest = () => {
+    dismissAuthNotice();
+    trackEvent('viral_test_started');
+    startViralTest();
+    setError(null);
+    setTimeout(() => play(), 100);
   };
 
   const handleTextSubmit = () => {
@@ -362,6 +368,24 @@ export default function ContentInput() {
           <p className="text-gray-400 text-sm md:text-lg">
             Train your reading speed with word-by-word display. Paste text or upload a PDF to begin.
           </p>
+        </div>
+
+        <div className="mb-8">
+          <button
+            onClick={handleViralTest}
+            className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-base md:text-lg"
+          >
+            Take the Viral Reading Test
+          </button>
+          <p className="mt-2 text-center text-xs text-gray-500">
+            30-second challenge · See your WPM score and percentile
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1 h-px bg-gray-800" />
+          <span className="text-xs text-gray-500 whitespace-nowrap">or paste your own text</span>
+          <div className="flex-1 h-px bg-gray-800" />
         </div>
 
         <div className="flex gap-2 mb-6 border-b border-gray-800">

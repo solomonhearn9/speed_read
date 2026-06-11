@@ -1,5 +1,22 @@
 import { create } from 'zustand';
 import { ProcessedWord, processText } from './textProcessor';
+import {
+  VIRAL_TEST_DURATION_SEC,
+  VIRAL_TEST_TEXT,
+  VIRAL_TEST_WPM,
+  calculatePercentile,
+  calculateViralTestWpm,
+  getViralTestPassage,
+} from './viralTest';
+
+export type SessionMode = 'normal' | 'viral_test';
+
+export interface ViralTestResults {
+  wpm: number;
+  percentile: number;
+  wordsRead: number;
+  durationSec: number;
+}
 
 export interface ReadingState {
   // Content
@@ -13,6 +30,10 @@ export interface ReadingState {
   
   // View mode
   viewMode: 'reading' | 'page';
+
+  // Viral reading test
+  sessionMode: SessionMode;
+  viralTestResults: ViralTestResults | null;
   
   // Progress
   progress: number;
@@ -30,6 +51,10 @@ export interface ReadingState {
   previousSentence: () => void;
   setViewMode: (mode: 'reading' | 'page') => void;
   jumpToWord: (index: number) => void;
+  setSessionMode: (mode: SessionMode) => void;
+  startViralTest: () => void;
+  completeViralTest: (wordsRead: number, durationSec?: number) => void;
+  clearViralTestResults: () => void;
   reset: () => void;
 }
 
@@ -40,6 +65,8 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
   isPlaying: false,
   speedWPM: 250,
   viewMode: 'reading',
+  sessionMode: 'normal',
+  viralTestResults: null,
   progress: 0,
 
   setText: (text: string) => {
@@ -138,6 +165,39 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
     set({ viewMode: 'reading' });
   },
 
+  setSessionMode: (mode: SessionMode) => {
+    set({ sessionMode: mode, viralTestResults: null });
+  },
+
+  startViralTest: () => {
+    const passage = getViralTestPassage(VIRAL_TEST_TEXT);
+    const words = processText(passage, VIRAL_TEST_WPM);
+    set({
+      rawText: passage,
+      processedWords: words,
+      currentIndex: 0,
+      progress: 0,
+      isPlaying: false,
+      speedWPM: VIRAL_TEST_WPM,
+      viewMode: 'reading',
+      sessionMode: 'viral_test',
+      viralTestResults: null,
+    });
+  },
+
+  completeViralTest: (wordsRead: number, durationSec = VIRAL_TEST_DURATION_SEC) => {
+    const wpm = calculateViralTestWpm(wordsRead, durationSec);
+    const percentile = calculatePercentile(wpm);
+    set({
+      isPlaying: false,
+      viralTestResults: { wpm, percentile, wordsRead, durationSec },
+    });
+  },
+
+  clearViralTestResults: () => {
+    set({ viralTestResults: null });
+  },
+
   reset: () => {
     set({
       rawText: '',
@@ -146,6 +206,8 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
       isPlaying: false,
       progress: 0,
       viewMode: 'reading',
+      sessionMode: 'normal',
+      viralTestResults: null,
     });
   },
 }));

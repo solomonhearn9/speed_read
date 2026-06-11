@@ -34,6 +34,9 @@ export const ANALYTICS_EVENT_NAMES: readonly AnalyticsEventName[] = [
   'invite_modal_viewed',
   'invite_sent',
   'referral_link_copied',
+  'viral_test_started',
+  'viral_test_completed',
+  'viral_test_shared',
 ] as const;
 
 export function isValidAnalyticsEventName(name: string): name is AnalyticsEventName {

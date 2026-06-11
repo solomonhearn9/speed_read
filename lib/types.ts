@@ -61,4 +61,7 @@ export type AnalyticsEventName =
   | 'url_scrape_attempted'
   | 'invite_modal_viewed'
   | 'invite_sent'
-  | 'referral_link_copied';
+  | 'referral_link_copied'
+  | 'viral_test_started'
+  | 'viral_test_completed'
+  | 'viral_test_shared';

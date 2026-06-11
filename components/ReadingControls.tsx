@@ -1,8 +1,13 @@
 'use client';
 
 import { useReadingStore } from '@/lib/store';
+import { VIRAL_TEST_DURATION_SEC } from '@/lib/viralTest';
 
-export default function ReadingControls() {
+interface ReadingControlsProps {
+  viralSecondsRemaining?: number;
+}
+
+export default function ReadingControls({ viralSecondsRemaining }: ReadingControlsProps) {
   const {
     isPlaying,
     togglePlay,
@@ -16,7 +21,13 @@ export default function ReadingControls() {
     processedWords,
     currentIndex,
     setViewMode,
+    sessionMode,
   } = useReadingStore();
+
+  const isViralTest = sessionMode === 'viral_test';
+  const viralTimeProgress = viralSecondsRemaining !== undefined
+    ? ((VIRAL_TEST_DURATION_SEC - viralSecondsRemaining) / VIRAL_TEST_DURATION_SEC) * 100
+    : 0;
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSpeed = parseInt(e.target.value);
@@ -32,13 +43,22 @@ export default function ReadingControls() {
       {/* Progress bar */}
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-400 mb-2">
-          <span>Progress: {Math.round(progress)}%</span>
-          <span>{currentIndex + 1} / {processedWords.length}</span>
+          {isViralTest && viralSecondsRemaining !== undefined ? (
+            <>
+              <span>Challenge</span>
+              <span className="tabular-nums">{viralSecondsRemaining}s left</span>
+            </>
+          ) : (
+            <>
+              <span>Progress: {Math.round(progress)}%</span>
+              <span>{currentIndex + 1} / {processedWords.length}</span>
+            </>
+          )}
         </div>
         <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-red-500 transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${isViralTest ? viralTimeProgress : progress}%` }}
           />
         </div>
       </div>
@@ -103,40 +123,44 @@ export default function ReadingControls() {
       </div>
 
       {/* Speed control */}
-      <div className="flex items-center justify-center gap-4">
-        <span className="text-gray-400 text-sm">100</span>
-        <div className="flex-1 max-w-md">
-          <input
-            type="range"
-            min="100"
-            max="1000"
-            value={speedWPM}
-            onChange={handleSpeedChange}
-            className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-          />
+      {!isViralTest && (
+        <div className="flex items-center justify-center gap-4">
+          <span className="text-gray-400 text-sm">100</span>
+          <div className="flex-1 max-w-md">
+            <input
+              type="range"
+              min="100"
+              max="1000"
+              value={speedWPM}
+              onChange={handleSpeedChange}
+              className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+            />
+          </div>
+          <span className="text-gray-400 text-sm">1000</span>
         </div>
-        <span className="text-gray-400 text-sm">1000</span>
-      </div>
+      )}
 
       {/* View mode toggle and reset */}
-      <div className="flex justify-center gap-4 mt-4">
-        <button
-          onClick={() => setViewMode('page')}
-          className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-          title="View full text (ESC)"
-        >
-          Full Text View
-        </button>
-        <button
-          onClick={() => {
-            useReadingStore.getState().reset();
-          }}
-          className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-          title="Load new content"
-        >
-          New Content
-        </button>
-      </div>
+      {!isViralTest && (
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => setViewMode('page')}
+            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+            title="View full text (ESC)"
+          >
+            Full Text View
+          </button>
+          <button
+            onClick={() => {
+              useReadingStore.getState().reset();
+            }}
+            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+            title="Load new content"
+          >
+            New Content
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReadingStore } from '@/lib/store';
 import { trackEvent } from '@/lib/analytics';
+import { VIRAL_TEST_DURATION_SEC } from '@/lib/viralTest';
 import WordDisplay from './WordDisplay';
 import ReadingControls from './ReadingControls';
 
@@ -15,10 +16,12 @@ export default function ReadingView() {
     isPlaying,
     speedWPM,
     rawText,
-    setCurrentIndex,
+    sessionMode,
+    viralTestResults,
     nextWord,
     pause,
     setSpeed,
+    completeViralTest,
   } = useReadingStore();
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -26,10 +29,68 @@ export default function ReadingView() {
   const lastSpeedChangeRef = useRef<number>(-1);
   const sessionCompletedRef = useRef(false);
   const lastCompletedIndexRef = useRef(-1);
+  const viralActiveMsRef = useRef(0);
+  const viralPlayStartRef = useRef<number | null>(null);
+  const viralTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [viralSecondsRemaining, setViralSecondsRemaining] = useState(VIRAL_TEST_DURATION_SEC);
+
+  // Viral test: track active reading time and end after 30 seconds
+  useEffect(() => {
+    if (sessionMode !== 'viral_test' || viralTestResults) return;
+
+    if (isPlaying) {
+      viralPlayStartRef.current = Date.now();
+
+      const tick = () => {
+        const playStart = viralPlayStartRef.current;
+        if (playStart === null) return;
+
+        const elapsedMs = viralActiveMsRef.current + (Date.now() - playStart);
+        const remainingSec = Math.max(0, Math.ceil((VIRAL_TEST_DURATION_SEC * 1000 - elapsedMs) / 1000));
+        setViralSecondsRemaining(remainingSec);
+
+        if (elapsedMs >= VIRAL_TEST_DURATION_SEC * 1000) {
+          const wordsRead = useReadingStore.getState().currentIndex + 1;
+          const durationSec = VIRAL_TEST_DURATION_SEC;
+          const wpm = Math.round((wordsRead / durationSec) * 60);
+          trackEvent('viral_test_completed', { wordsRead, wpm });
+          completeViralTest(wordsRead, durationSec);
+          return;
+        }
+
+        viralTimerRef.current = setTimeout(tick, 100);
+      };
+
+      tick();
+    } else if (viralPlayStartRef.current !== null) {
+      viralActiveMsRef.current += Date.now() - viralPlayStartRef.current;
+      viralPlayStartRef.current = null;
+      if (viralTimerRef.current) {
+        clearTimeout(viralTimerRef.current);
+        viralTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (viralTimerRef.current) {
+        clearTimeout(viralTimerRef.current);
+        viralTimerRef.current = null;
+      }
+    };
+  }, [sessionMode, isPlaying, viralTestResults, completeViralTest]);
+
+  useEffect(() => {
+    if (sessionMode === 'viral_test' && !viralTestResults) {
+      viralActiveMsRef.current = 0;
+      viralPlayStartRef.current = null;
+      setViralSecondsRemaining(VIRAL_TEST_DURATION_SEC);
+    }
+  }, [sessionMode, viralTestResults, processedWords.length]);
 
   // Demo mode: detect if this is demo text and calculate speed change points
   useEffect(() => {
     const isDemoText = rawText.trim().startsWith(DEMO_TEXT_START);
+    if (sessionMode === 'viral_test') return;
     if (!isDemoText || processedWords.length === 0) {
       speedChangePointsRef.current.clear();
       return;
@@ -74,10 +135,11 @@ export default function ReadingView() {
         }
       });
     }
-  }, [rawText, processedWords, currentIndex, speedWPM, setSpeed]);
+  }, [rawText, processedWords, currentIndex, speedWPM, setSpeed, sessionMode]);
 
   // Demo mode: automatically adjust speed at calculated positions
   useEffect(() => {
+    if (sessionMode === 'viral_test') return;
     const isDemoText = rawText.trim().startsWith(DEMO_TEXT_START);
     if (!isDemoText || speedChangePointsRef.current.size === 0) return;
 
@@ -87,7 +149,7 @@ export default function ReadingView() {
       setSpeed(targetSpeed);
       lastSpeedChangeRef.current = targetSpeed;
     }
-  }, [currentIndex, rawText, speedWPM, setSpeed]);
+  }, [currentIndex, rawText, speedWPM, setSpeed, sessionMode]);
 
   useEffect(() => {
     if (!isPlaying || processedWords.length === 0) {
@@ -180,7 +242,9 @@ export default function ReadingView() {
   return (
     <div className="relative">
       <WordDisplay word={currentWord} />
-      <ReadingControls />
+      <ReadingControls
+        viralSecondsRemaining={sessionMode === 'viral_test' ? viralSecondsRemaining : undefined}
+      />
     </div>
   );
 }
