@@ -356,9 +356,11 @@ export default function ContentInput() {
         <UsageStatus />
 
         <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Speed Reader</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            Speed <span className="text-red-500">Reader</span>
+          </h1>
           <p className="text-gray-400 text-sm md:text-lg">
-            Rapid Serial Visual Presentation with Optimal Recognition Point
+            Train your reading speed with word-by-word display. Paste text or upload a PDF to begin.
           </p>
         </div>
 

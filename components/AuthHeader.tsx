@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
@@ -43,16 +44,17 @@ export default function AuthHeader() {
 
   return (
     <>
-      <header className="absolute top-0 right-0 left-0 z-10 flex items-center justify-end gap-3 p-4 md:p-6">
-        {!isPaid && (
-          <button
-            onClick={() => setShowUpgrade(true)}
-            className="text-sm text-gray-400 hover:text-white transition-colors hidden sm:block"
-          >
-            Upgrade
-          </button>
-        )}
+      <header className="absolute top-0 right-0 left-0 z-10 flex items-center justify-between gap-3 p-4 md:p-6">
+        <Image
+          src="/logo.png"
+          alt="SpeedRead.cc"
+          width={1254}
+          height={1254}
+          className="h-16 w-auto md:h-20"
+          priority
+        />
 
+        <div className="flex items-center gap-3">
         {user ? (
           <div className="relative">
             <button
@@ -131,6 +133,7 @@ export default function AuthHeader() {
             </button>
           </>
         )}
+        </div>
       </header>
 
       <AuthModal
