@@ -10,7 +10,6 @@ import { incrementAnonSessionCount } from '@/lib/anonSessions';
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
-import UsageStatus from './UsageStatus';
 import WordLimitBanner from './WordLimitBanner';
 import AuthModal from './AuthModal';
 import UpgradeModal from './UpgradeModal';
@@ -359,27 +358,47 @@ export default function ContentInput() {
       <AuthHeader />
 
       <div className="max-w-3xl mx-auto px-4 md:px-0 pt-12">
-        <UsageStatus />
+        <div className="relative mb-8 py-6">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden="true"
+            style={{
+              background:
+                'radial-gradient(ellipse 75% 55% at 50% 45%, rgba(239, 68, 68, 0.07) 0%, transparent 70%)',
+            }}
+          />
 
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Speed <span className="text-red-500">Reader</span>
-          </h1>
-          <p className="text-gray-400 text-sm md:text-lg">
-            Train your reading speed with word-by-word display. Paste text or upload a PDF to begin.
-          </p>
-        </div>
+          <div className="relative text-center">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight px-1">
+              How fast can you read?
+            </h1>
+            <p className="text-gray-400 text-sm md:text-lg px-1">
+              Take the 30-second reading challenge and discover your WPM score.
+            </p>
+          </div>
 
-        <div className="mb-8">
-          <button
-            onClick={handleViralTest}
-            className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-base md:text-lg"
-          >
-            Take the Viral Reading Test
-          </button>
-          <p className="mt-2 text-center text-xs text-gray-500">
-            30-second challenge · See your WPM score and percentile
-          </p>
+          <div className="relative mt-8">
+            <button
+              onClick={handleViralTest}
+              className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-base md:text-lg"
+            >
+              Start the 30-Second Challenge
+            </button>
+            <p className="mt-3 text-center text-[10px] sm:text-xs text-gray-500">
+              Average reader ≈ 200 WPM
+            </p>
+            <p className="mt-1.5 text-center text-[10px] sm:text-xs text-gray-500 leading-relaxed px-1">
+              <span className="inline-flex flex-wrap justify-center gap-x-2 gap-y-1.5 max-w-full">
+                <span>🟢 300 WPM</span>
+                <span className="text-gray-600 hidden sm:inline" aria-hidden="true">•</span>
+                <span>🟡 500 WPM</span>
+                <span className="text-gray-600 hidden sm:inline" aria-hidden="true">•</span>
+                <span>🔴 700 WPM</span>
+                <span className="text-gray-600 hidden sm:inline" aria-hidden="true">•</span>
+                <span>⚫ 900+ WPM</span>
+              </span>
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 mb-6">
