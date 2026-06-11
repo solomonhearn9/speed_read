@@ -50,7 +50,7 @@ export default function AuthHeader() {
           alt="SpeedRead.cc"
           width={1254}
           height={1254}
-          className="h-16 w-auto md:h-20"
+          className="h-20 w-auto md:h-28"
           priority
         />
 

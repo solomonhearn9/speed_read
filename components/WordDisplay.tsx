@@ -6,10 +6,9 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface WordDisplayProps {
   word: ProcessedWord;
-  speedWPM: number;
 }
 
-export default function WordDisplay({ word, speedWPM }: WordDisplayProps) {
+export default function WordDisplay({ word }: WordDisplayProps) {
   const { text, orpIndex } = word;
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -68,9 +67,6 @@ export default function WordDisplay({ word, speedWPM }: WordDisplayProps) {
         
         {/* Top horizontal line */}
         <div className="absolute top-10 md:top-16 left-0 right-0 h-px bg-gray-700" />
-        
-        {/* Bottom vertical line */}
-        <div className="absolute left-1/2 bottom-[160px] md:bottom-[200px] w-px h-10 md:h-16 bg-gray-600 -translate-x-1/2" />
       </div>
 
       {/* Word display - anchor character ALWAYS at exact center using flexbox */}
@@ -111,12 +107,6 @@ export default function WordDisplay({ word, speedWPM }: WordDisplayProps) {
           </span>
         </div>
       </motion.div>
-
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-36 md:bottom-44 z-20">
-        <span className="font-mono text-3xl md:text-4xl text-gray-300 tabular-nums">
-          {speedWPM}
-        </span>
-      </div>
     </div>
   );
 }
