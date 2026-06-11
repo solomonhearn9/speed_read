@@ -14,6 +14,12 @@ export interface Profile {
   lifetime_purchase: boolean;
   subscription_cancel_at_period_end?: boolean;
   subscription_current_period_end?: string | null;
+  first_utm_source?: string | null;
+  first_utm_medium?: string | null;
+  first_utm_campaign?: string | null;
+  first_utm_content?: string | null;
+  first_referrer?: string | null;
+  first_landing_path?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +36,8 @@ export interface UsageInfo {
 
 export type AnalyticsEventName =
   | 'landing_page_view'
+  | 'challenge_started'
+  | 'challenge_completed'
   | 'paste_text_started'
   | 'start_reading_clicked'
   | 'reading_session_started'
@@ -42,6 +50,7 @@ export type AnalyticsEventName =
   | 'checkout_started_monthly'
   | 'checkout_started_lifetime'
   | 'checkout_completed'
+  | 'paid_user_created'
   | 'upload_gate_viewed'
   | 'url_gate_viewed'
   | 'word_limit_hit'

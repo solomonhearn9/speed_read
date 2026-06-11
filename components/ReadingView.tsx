@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useReadingStore } from '@/lib/store';
 import { trackEvent } from '@/lib/analytics';
+import { getViralTestAttemptCount } from '@/lib/viralTestAttempts';
 import { VIRAL_TEST_DURATION_SEC, getViralTestScoreWpm, getViralTestWpmAtElapsedMs } from '@/lib/viralTest';
 import WordDisplay from './WordDisplay';
 import ReadingControls from './ReadingControls';
@@ -44,6 +45,14 @@ export default function ReadingView() {
     const wordsRead = useReadingStore.getState().currentIndex + 1;
     const elapsedSec = Math.max(1, Math.round(elapsedMs / 1000));
     const scoreWpm = getViralTestScoreWpm(elapsedMs);
+    const challengeLevel = getViralTestAttemptCount();
+    trackEvent('challenge_completed', {
+      wpm: scoreWpm,
+      challenge_score: scoreWpm,
+      challenge_level: challengeLevel,
+      wordsRead,
+      durationSec: elapsedSec,
+    });
     trackEvent('viral_test_completed', { wordsRead, wpm: scoreWpm, durationSec: elapsedSec });
     completeViralTest(wordsRead, elapsedSec, scoreWpm);
   }, [completeViralTest]);

@@ -2,6 +2,8 @@ import type { AnalyticsEventName } from '../types';
 
 export const ANALYTICS_EVENT_NAMES: readonly AnalyticsEventName[] = [
   'landing_page_view',
+  'challenge_started',
+  'challenge_completed',
   'paste_text_started',
   'start_reading_clicked',
   'reading_session_started',
@@ -14,6 +16,7 @@ export const ANALYTICS_EVENT_NAMES: readonly AnalyticsEventName[] = [
   'checkout_started_monthly',
   'checkout_started_lifetime',
   'checkout_completed',
+  'paid_user_created',
   'upload_gate_viewed',
   'url_gate_viewed',
   'word_limit_hit',

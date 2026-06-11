@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import { useAuth } from '@/lib/auth-context';
-import { trackEvent } from '@/lib/analytics';
+import { trackEvent, persistSignupAttribution } from '@/lib/analytics';
 import { RATE_LIMIT_MESSAGE } from '@/lib/auth-utils';
 
 type AuthViewState =
@@ -107,11 +107,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
     if ('status' in result && result.status === 'verification_required') {
       trackEvent('signup_completed');
       trackEvent('verification_email_sent');
+      void persistSignupAttribution();
       setViewState('verification_email_sent');
       return;
     }
 
     trackEvent('signup_completed');
+    void persistSignupAttribution();
     onSuccess?.();
     onClose();
   };

@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 import { countWords, truncateToWordLimit } from '@/lib/wordCount';
 import { incrementAnonSessionCount } from '@/lib/anonSessions';
-import { canStartViralTest, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
+import { canStartViralTest, getViralTestAttemptCount, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
@@ -80,7 +80,6 @@ export default function ContentInput() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('checkout') === 'success') {
       trackEvent('checkout_completed');
-      window.history.replaceState({}, '', '/');
 
       const pollForPaidProfile = async () => {
         for (let attempt = 0; attempt < 8; attempt++) {
@@ -89,6 +88,9 @@ export default function ContentInput() {
             if (res.ok) {
               const data = await res.json();
               if (data.profile && isPaidProfile(data.profile as Profile)) {
+                const profile = data.profile as Profile;
+                const checkoutType = profile.plan_status === 'lifetime' ? 'lifetime' : 'monthly';
+                trackEvent('paid_user_created', { checkout_type: checkoutType });
                 await refreshUsage();
                 return;
               }
@@ -104,6 +106,7 @@ export default function ContentInput() {
       };
 
       void pollForPaidProfile();
+      window.history.replaceState({}, '', '/');
     }
     if (params.get('auth') === 'verified') {
       trackEvent('verification_completed');
@@ -188,7 +191,7 @@ export default function ContentInput() {
       return text;
     }
 
-    trackEvent('word_limit_hit', { wordCount, limit: usage.wordLimit });
+    trackEvent('word_limit_hit', { word_count: wordCount, wordCount, limit: usage.wordLimit });
 
     if (usage.tier === 'anonymous') {
       setWordLimitMessage(
@@ -218,7 +221,7 @@ export default function ContentInput() {
     const isDemoText = limitedText.trim().startsWith("Let's see if you can keep up with this Speed Reading exercise");
     setText(limitedText);
     setError(null);
-    trackEvent('reading_session_started', { wordCount: countWords(limitedText) });
+    trackEvent('reading_session_started', { word_count: countWords(limitedText), wordCount: countWords(limitedText) });
 
     if ((isDemoText && isFirstVisitRef.current) || isDemo) {
       setTimeout(() => {
@@ -239,7 +242,9 @@ export default function ContentInput() {
     }
 
     incrementViralTestAttemptCount();
-    trackEvent('viral_test_started');
+    const challengeLevel = getViralTestAttemptCount();
+    trackEvent('challenge_started', { challenge_level: challengeLevel });
+    trackEvent('viral_test_started', { challenge_level: challengeLevel });
     startViralTest();
     setError(null);
     setTimeout(() => play(), 100);

@@ -5,7 +5,7 @@ import { useReadingStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 import { getViralTestShareMessage } from '@/lib/viralTest';
-import { canStartViralTest, getViralTestAttemptsRemaining, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
+import { canStartViralTest, getViralTestAttemptCount, getViralTestAttemptsRemaining, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
 import AuthModal from './AuthModal';
 import UpgradeModal from './UpgradeModal';
 
@@ -54,7 +54,9 @@ export default function ViralTestResults() {
     }
 
     incrementViralTestAttemptCount();
-    trackEvent('viral_test_started');
+    const challengeLevel = getViralTestAttemptCount();
+    trackEvent('challenge_started', { challenge_level: challengeLevel });
+    trackEvent('viral_test_started', { challenge_level: challengeLevel });
     startViralTest();
     setShareStatus('idle');
     setTimeout(() => play(), 100);

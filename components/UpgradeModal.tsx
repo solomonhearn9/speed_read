@@ -74,8 +74,12 @@ export default function UpgradeModal({
     setLoading(priceType);
     setError(null);
     trackEvent(priceType === 'monthly' ? 'pricing_monthly_selected' : 'pricing_lifetime_selected', { reason });
-    trackEvent('checkout_started', { priceType, reason });
-    trackEvent(priceType === 'monthly' ? 'checkout_started_monthly' : 'checkout_started_lifetime', { reason });
+    trackEvent('checkout_started', { checkout_type: priceType, priceType, reason });
+    trackEvent(priceType === 'monthly' ? 'checkout_started_monthly' : 'checkout_started_lifetime', {
+      checkout_type: priceType,
+      priceType,
+      reason,
+    });
 
     try {
       const res = await fetch('/api/checkout', {
