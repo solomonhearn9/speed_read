@@ -52,6 +52,42 @@ export function getUsageInfo(
   };
 }
 
+export type DevPlanLabel = 'Anonymous' | 'Free' | 'Monthly' | 'Lifetime';
+export type ProdPlanLabel = 'Free' | 'Pro' | 'Lifetime';
+
+export function getDevPlanLabel(isLoggedIn: boolean, profile: Profile | null): DevPlanLabel {
+  if (!isLoggedIn) return 'Anonymous';
+  if (profile?.lifetime_purchase || profile?.plan_status === 'lifetime') return 'Lifetime';
+  if (profile?.plan_status === 'monthly') return 'Monthly';
+  return 'Free';
+}
+
+export function getProdPlanLabel(isLoggedIn: boolean, profile: Profile | null): ProdPlanLabel | null {
+  if (!isLoggedIn) return null;
+  if (profile?.lifetime_purchase || profile?.plan_status === 'lifetime') return 'Lifetime';
+  if (isPaidProfile(profile)) return 'Pro';
+  return 'Free';
+}
+
+export function getAccountPlanLabel(profile: Profile | null): string {
+  if (!profile) return 'Free';
+  if (profile.lifetime_purchase || profile.plan_status === 'lifetime') return 'Lifetime Access';
+  if (profile.plan_status === 'monthly' && isPaidProfile(profile)) return 'Pro';
+  return 'Free';
+}
+
+export function getCancelAtPeriodEndMessage(profile: Profile | null): string | null {
+  if (!profile?.subscription_cancel_at_period_end || !profile.subscription_current_period_end) {
+    return null;
+  }
+  const date = new Date(profile.subscription_current_period_end).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  return `Your Pro access remains active until ${date}.`;
+}
+
 export function getSessionLimitLabel(tier: UserTier, sessionsUsed: number, sessionsLimit: number): string {
   if (tier === 'paid') return 'Pro plan: unlimited sessions';
   if (tier === 'anonymous') {

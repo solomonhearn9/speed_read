@@ -57,6 +57,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       return;
     }
 
+    trackEvent('verification_email_resent');
     setViewState('verification_resent');
   };
 
@@ -80,10 +81,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           setViewState('unverified_login');
           return;
         }
+        trackEvent('login_failed', { reason: result.status });
         setError(result.error);
         return;
       }
 
+      trackEvent('login_success');
       onSuccess?.();
       onClose();
       return;
@@ -103,6 +106,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
     if ('status' in result && result.status === 'verification_required') {
       trackEvent('signup_completed');
+      trackEvent('verification_email_sent');
       setViewState('verification_email_sent');
       return;
     }

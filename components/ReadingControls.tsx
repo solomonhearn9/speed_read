@@ -1,6 +1,7 @@
 'use client';
 
 import { useReadingStore } from '@/lib/store';
+import { trackEvent } from '@/lib/analytics';
 
 export default function ReadingControls() {
   const {
@@ -21,6 +22,31 @@ export default function ReadingControls() {
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSpeed = parseInt(e.target.value);
     setSpeed(newSpeed);
+  };
+
+  const handleShare = async () => {
+    trackEvent('share_clicked');
+    const url = window.location.origin;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Speed Reader',
+          text: 'Try this RSVP speed reading tool',
+          url,
+        });
+      } catch {
+        // User cancelled or share failed — event already tracked
+      }
+    }
+  };
+
+  const handleCopyLink = async () => {
+    trackEvent('copy_link_clicked');
+    try {
+      await navigator.clipboard.writeText(window.location.origin);
+    } catch {
+      // Clipboard unavailable — event still tracked
+    }
   };
 
   return (
@@ -113,6 +139,24 @@ export default function ReadingControls() {
         </div>
         <span className="text-gray-400 text-sm">1000</span>
         <span className="text-gray-300 font-mono text-sm w-20 text-right">{speedWPM} WPM</span>
+      </div>
+
+      {/* Share and copy link */}
+      <div className="flex justify-center gap-4 mt-3">
+        <button
+          onClick={handleShare}
+          className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+          title="Share"
+        >
+          Share
+        </button>
+        <button
+          onClick={handleCopyLink}
+          className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+          title="Copy link"
+        >
+          Copy link
+        </button>
       </div>
 
       {/* View mode toggle and reset */}

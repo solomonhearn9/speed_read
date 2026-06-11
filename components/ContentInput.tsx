@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 import { countWords, truncateToWordLimit } from '@/lib/wordCount';
 import { incrementAnonSessionCount } from '@/lib/anonSessions';
+import { isPaidProfile } from '@/lib/plans';
+import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
 import UsageStatus from './UsageStatus';
 import WordLimitBanner from './WordLimitBanner';
@@ -72,16 +74,39 @@ export default function ContentInput() {
   const isFirstVisitRef = useRef(false);
   const pasteTrackedRef = useRef(false);
 
-  useEffect(() => {
-    trackEvent('landing_page_view');
+  const dismissAuthNotice = () => setAuthNotice(null);
 
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('checkout') === 'success') {
       trackEvent('checkout_completed');
-      refreshUsage();
       window.history.replaceState({}, '', '/');
+
+      const pollForPaidProfile = async () => {
+        for (let attempt = 0; attempt < 8; attempt++) {
+          try {
+            const res = await fetch('/api/usage');
+            if (res.ok) {
+              const data = await res.json();
+              if (data.profile && isPaidProfile(data.profile as Profile)) {
+                await refreshUsage();
+                return;
+              }
+            }
+          } catch {
+            // Non-blocking
+          }
+          if (attempt < 7) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+        }
+        await refreshUsage();
+      };
+
+      void pollForPaidProfile();
     }
     if (params.get('auth') === 'verified') {
+      trackEvent('verification_completed');
       refreshProfile();
       setAuthNotice('Email verified! You are now logged in.');
       window.history.replaceState({}, '', '/');
@@ -94,6 +119,13 @@ export default function ContentInput() {
       window.history.replaceState({}, '', '/');
     }
   }, [refreshUsage, refreshProfile]);
+
+  useEffect(() => {
+    const sessionKey = 'speed-reader-landing-tracked';
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, '1');
+    trackEvent('landing_page_view');
+  }, []);
 
   useEffect(() => {
     const hasVisited = localStorage.getItem('speed-reader-visited');
@@ -176,6 +208,7 @@ export default function ContentInput() {
   const startReading = async (text: string, isDemo = false) => {
     if (!text.trim()) return;
 
+    dismissAuthNotice();
     trackEvent('start_reading_clicked');
 
     if (!checkSessionLimit()) return;
@@ -215,6 +248,7 @@ export default function ContentInput() {
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    dismissAuthNotice();
     setTextInput(e.target.value);
     if (!pasteTrackedRef.current && e.target.value.length > 0) {
       pasteTrackedRef.current = true;
@@ -223,6 +257,7 @@ export default function ContentInput() {
   };
 
   const handleTabSwitch = (method: 'text' | 'file' | 'url') => {
+    dismissAuthNotice();
     if (method === 'file' && !usage.canUpload) {
       trackEvent('upload_gate_viewed');
       setUpgradeReason('upload');
@@ -239,6 +274,8 @@ export default function ContentInput() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    trackEvent('file_upload_attempted');
+
     if (!usage.canUpload) {
       trackEvent('upload_gate_viewed');
       setUpgradeReason('upload');
@@ -266,6 +303,8 @@ export default function ContentInput() {
   };
 
   const handleURLSubmit = async () => {
+    trackEvent('url_scrape_attempted');
+
     if (!usage.canScrape) {
       trackEvent('url_gate_viewed');
       setUpgradeReason('url');

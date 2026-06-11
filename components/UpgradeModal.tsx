@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Modal from './Modal';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
@@ -46,8 +46,20 @@ export default function UpgradeModal({
   const { user } = useAuth();
   const [loading, setLoading] = useState<'monthly' | 'lifetime' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const trackedOpenRef = useRef(false);
 
   const copy = REASON_COPY[reason];
+
+  useEffect(() => {
+    if (isOpen && !trackedOpenRef.current) {
+      trackedOpenRef.current = true;
+      trackEvent('upgrade_modal_viewed', { reason });
+      trackEvent('pricing_page_viewed', { reason });
+    }
+    if (!isOpen) {
+      trackedOpenRef.current = false;
+    }
+  }, [isOpen, reason]);
 
   const handleCheckout = async (priceType: 'monthly' | 'lifetime') => {
     if (!user) {
@@ -57,7 +69,9 @@ export default function UpgradeModal({
 
     setLoading(priceType);
     setError(null);
-    trackEvent(priceType === 'monthly' ? 'checkout_started_monthly' : 'checkout_started_lifetime');
+    trackEvent(priceType === 'monthly' ? 'pricing_monthly_selected' : 'pricing_lifetime_selected', { reason });
+    trackEvent('checkout_started', { priceType, reason });
+    trackEvent(priceType === 'monthly' ? 'checkout_started_monthly' : 'checkout_started_lifetime', { reason });
 
     try {
       const res = await fetch('/api/checkout', {

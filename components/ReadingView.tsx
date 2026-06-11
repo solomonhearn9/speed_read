@@ -25,6 +25,7 @@ export default function ReadingView() {
   const speedChangePointsRef = useRef<Map<number, number>>(new Map());
   const lastSpeedChangeRef = useRef<number>(-1);
   const sessionCompletedRef = useRef(false);
+  const lastCompletedIndexRef = useRef(-1);
 
   // Demo mode: detect if this is demo text and calculate speed change points
   useEffect(() => {
@@ -109,7 +110,8 @@ export default function ReadingView() {
         nextWord();
       } else {
         pause();
-        if (!sessionCompletedRef.current) {
+        if (lastCompletedIndexRef.current !== currentIndex) {
+          lastCompletedIndexRef.current = currentIndex;
           sessionCompletedRef.current = true;
           trackEvent('reading_session_completed');
         }
@@ -122,6 +124,13 @@ export default function ReadingView() {
       }
     };
   }, [isPlaying, currentIndex, processedWords, speedWPM, nextWord, pause]);
+
+  useEffect(() => {
+    if (currentIndex < processedWords.length - 1) {
+      sessionCompletedRef.current = false;
+      lastCompletedIndexRef.current = -1;
+    }
+  }, [currentIndex, processedWords.length]);
 
   // Keyboard shortcuts
   useEffect(() => {
