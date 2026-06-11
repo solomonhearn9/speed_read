@@ -1,7 +1,6 @@
 'use client';
 
 import { useReadingStore } from '@/lib/store';
-import { trackEvent } from '@/lib/analytics';
 
 export default function ReadingControls() {
   const {
@@ -24,33 +23,10 @@ export default function ReadingControls() {
     setSpeed(newSpeed);
   };
 
-  const handleShare = async () => {
-    trackEvent('share_clicked');
-    const url = window.location.origin;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Speed Reader',
-          text: 'Try this RSVP speed reading tool',
-          url,
-        });
-      } catch {
-        // User cancelled or share failed — event already tracked
-      }
-    }
-  };
-
-  const handleCopyLink = async () => {
-    trackEvent('copy_link_clicked');
-    try {
-      await navigator.clipboard.writeText(window.location.origin);
-    } catch {
-      // Clipboard unavailable — event still tracked
-    }
-  };
-
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm border-t border-gray-800 p-6">
+      <p className="text-center text-xs text-gray-500 uppercase tracking-widest mb-2">wpm</p>
+
       {/* Progress bar */}
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-400 mb-2">
@@ -138,25 +114,6 @@ export default function ReadingControls() {
           />
         </div>
         <span className="text-gray-400 text-sm">1000</span>
-        <span className="text-gray-300 font-mono text-sm w-20 text-right">{speedWPM} WPM</span>
-      </div>
-
-      {/* Share and copy link */}
-      <div className="flex justify-center gap-4 mt-3">
-        <button
-          onClick={handleShare}
-          className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
-          title="Share"
-        >
-          Share
-        </button>
-        <button
-          onClick={handleCopyLink}
-          className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
-          title="Copy link"
-        >
-          Copy link
-        </button>
       </div>
 
       {/* View mode toggle and reset */}

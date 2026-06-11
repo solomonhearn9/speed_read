@@ -6,9 +6,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface WordDisplayProps {
   word: ProcessedWord;
+  speedWPM: number;
 }
 
-export default function WordDisplay({ word }: WordDisplayProps) {
+export default function WordDisplay({ word, speedWPM }: WordDisplayProps) {
   const { text, orpIndex } = word;
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -110,6 +111,12 @@ export default function WordDisplay({ word }: WordDisplayProps) {
           </span>
         </div>
       </motion.div>
+
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-36 md:bottom-44 z-20">
+        <span className="font-mono text-3xl md:text-4xl text-gray-300 tabular-nums">
+          {speedWPM}
+        </span>
+      </div>
     </div>
   );
 }

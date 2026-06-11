@@ -179,7 +179,7 @@ export default function ReadingView() {
 
   return (
     <div className="relative">
-      <WordDisplay word={currentWord} />
+      <WordDisplay word={currentWord} speedWPM={speedWPM} />
       <ReadingControls />
     </div>
   );

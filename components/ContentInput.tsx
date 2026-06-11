@@ -335,17 +335,6 @@ export default function ContentInput() {
   if (hasContent) {
     return (
       <>
-        {wordLimitMessage && (
-          <div className="fixed top-0 left-0 right-0 z-30 p-2">
-            <WordLimitBanner
-              message={wordLimitMessage}
-              onUpgrade={usage.tier !== 'paid' ? () => {
-                setUpgradeReason('word_limit');
-                setShowUpgradeModal(true);
-              } : undefined}
-            />
-          </div>
-        )}
         <UpgradeModal
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
