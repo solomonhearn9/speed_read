@@ -1,6 +1,7 @@
 import type { PlanStatus } from '@/lib/types';
 import { getAttributionProperties } from './attribution';
 import { getDeviceType } from './device';
+import { deriveUserType, getSessionFlags } from './session-flags';
 
 export interface AnalyticsContext {
   is_logged_in: boolean;
@@ -37,10 +38,18 @@ export function enrichEventProperties(
   const context = getAnalyticsContext();
   const attribution = getAttributionProperties();
 
+  const flags = getSessionFlags();
+  const userType = deriveUserType(context.is_logged_in, context.plan_status);
+
   const enriched: Record<string, unknown> = {
     ...attribution,
     is_logged_in: context.is_logged_in,
     plan_status: context.plan_status,
+    user_type: userType,
+    user_plan: properties.user_plan ?? userType,
+    challenge_completed: flags.challenge_completed,
+    training_user: flags.training_user,
+    adventure_user: flags.adventure_user,
     device_type: getDeviceType(),
     ...properties,
   };

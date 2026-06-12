@@ -68,6 +68,7 @@ export const ANALYTICS_EVENT_NAMES: readonly AnalyticsEventName[] = [
   'adventure_signup_prompt_viewed',
   'adventure_signup_clicked',
   'adventure_story_completed',
+  'chapter_abandoned',
 ] as const;
 
 export function isValidAnalyticsEventName(name: string): name is AnalyticsEventName {

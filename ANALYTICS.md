@@ -6,7 +6,9 @@ Speed Reader sends product analytics to three destinations:
 2. **PostHog** — funnels, cohorts, and product analytics (optional)
 3. **Microsoft Clarity** — session replays and heatmaps (optional)
 
-All tracking goes through `trackEvent()` in `lib/analytics/index.ts`. Events are enriched with first-touch attribution, device type, login state, and plan status before being sent to every adapter.
+All tracking goes through `trackEvent()` in `lib/analytics/index.ts`. Events are enriched with first-touch attribution, device type, login state, plan status, and session flags before being sent to **Supabase**, **PostHog**, and **Clarity** adapters.
+
+See `lib/analytics/ANALYTICS_AUDIT.md` for the full implementation audit and `lib/analytics/dashboards/` for PostHog dashboard definitions.
 
 ## Environment variables
 
@@ -35,6 +37,23 @@ Clarity does not load in local development unless `NEXT_PUBLIC_CLARITY_PROJECT_I
 3. Set `NEXT_PUBLIC_CLARITY_PROJECT_ID` (e.g. `x5l3e54fmk`).
 4. Clarity loads asynchronously via `@microsoft/clarity` in `AnalyticsProvider` — it does not block rendering.
 5. Logged-in users are identified with their Supabase user ID and email.
+6. Every `trackEvent()` also fires `Clarity.event(eventName)` and updates custom tags.
+
+### Clarity custom tags
+
+| Tag | Values |
+|-----|--------|
+| `user_type` | `anonymous`, `free`, `paid` |
+| `challenge_completed` | `true` / `false` (session) |
+| `training_user` | `true` / `false` (session) |
+| `adventure_user` | `true` / `false` (session) |
+| `chapter_number` | Latest adventure chapter number |
+| `story_slug` | e.g. `lost-crystal-dragon` |
+| `utm_source`, `utm_medium`, `utm_campaign`, `utm_content` | First-touch attribution |
+| `source_platform` | Derived platform |
+| `last_event` | Most recent event name |
+
+Filter session replays in Clarity: **Filters → Custom tags**.
 
 ## UTM format for social posts
 
@@ -77,37 +96,15 @@ Supporting events:
 - `paid_user_created` — profile confirmed paid after Stripe return
 - Gate/limit events: `upload_gate_viewed`, `url_gate_viewed`, `word_limit_hit`, `session_limit_hit`
 
-## PostHog dashboards to build
+## PostHog dashboards
 
-### 1. Social acquisition funnel
+Create three dashboards using step-by-step definitions in:
 
-Steps: `landing_page_view` → `challenge_started` → `signup_completed` → `upgrade_modal_viewed` → `checkout_started` → `checkout_completed`
+- `lib/analytics/dashboards/viral-funnel.md`
+- `lib/analytics/dashboards/adult-training-funnel.md`
+- `lib/analytics/dashboards/adventure-funnel.md`
 
-- Break down by `source_platform`, `utm_campaign`, `utm_content`
-- Filter `utm_medium = social`
-
-### 2. Challenge engagement
-
-- Trend: `challenge_started` vs `challenge_completed`
-- Break down by `challenge_level`, `source_platform`
-- Property: `challenge_score` (WPM tier reached)
-
-### 3. Paywall conversion
-
-- Funnel: `upgrade_modal_viewed` → `checkout_started` → `checkout_completed`
-- Break down by `limit_type` (`word`, `session`, `upload`, `url`, `challenge`)
-- Break down by `checkout_type` (`monthly` vs `lifetime`)
-
-### 4. Signup quality by source
-
-- Event: `signup_completed`
-- Break down by `utm_source`, `first_utm_campaign` (person property after identify)
-- Cohort: users who completed checkout within 7 days of signup
-
-### 5. Session behavior (Clarity + PostHog)
-
-- Use Clarity for replays filtered by landing URL with UTM params
-- PostHog insight: `reading_session_started` count by `device_type` and `plan_status`
+Supabase SQL equivalents: `lib/analytics/funnel-metrics.sql`
 
 ## Event properties reference
 
@@ -115,7 +112,8 @@ Common properties auto-attached to every event:
 
 - `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`
 - `referrer`, `landing_path`, `source_platform`, `content_id`
-- `is_logged_in`, `plan_status`, `device_type`
+- `is_logged_in`, `plan_status`, `user_type`, `device_type`
+- `challenge_completed`, `training_user`, `adventure_user` (session flags)
 
 Event-specific properties:
 
@@ -131,6 +129,9 @@ Event-specific properties:
 
 - `lib/analytics/index.ts` — `trackEvent()` entry point
 - `lib/analytics/attribution.ts` — first-touch UTM capture
-- `lib/analytics/adapters/` — Supabase + PostHog adapters
+- `lib/analytics/adapters/` — Supabase + PostHog + Clarity adapters
+- `lib/analytics/clarity-tags.ts` — Clarity custom tag sync
+- `lib/analytics/session-flags.ts` — Session funnel flags
+- `lib/analytics/hooks/useChapterAbandonment.ts` — Adventure drop-off tracking
 - `components/AnalyticsProvider.tsx` — PostHog init, Clarity init, user identify
 - `app/api/analytics/attribution/route.ts` — persist attribution on signup

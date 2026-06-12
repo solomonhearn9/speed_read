@@ -1,6 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
@@ -18,7 +20,14 @@ interface AuthHeaderProps {
   theme?: ModalTheme;
 }
 
+const CHALLENGE_NAV = [
+  { href: '/how-it-works', label: 'How It Works' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/blog', label: 'Blog' },
+] as const;
+
 export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
+  const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
   const [authModal, setAuthModal] = useState<'login' | 'signup' | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -53,12 +62,23 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
     : 'text-sm text-content-secondary hover:text-content-primary surface-card rounded-lg px-3 py-1.5 transition-colors max-w-[200px] truncate';
 
   const signupBtnClass = isChallenge
-    ? 'text-sm challenge-surface hover:border-brand-cyan/30 text-white rounded-lg px-3 py-1.5 transition-colors border border-transparent'
+    ? 'text-sm btn-signup-gradient font-semibold rounded-full px-5 py-2 transition-opacity hover:opacity-90'
     : 'text-sm btn-brand rounded-lg px-3 py-1.5';
 
   const loginBtnClass = isChallenge
-    ? 'text-sm text-slate-300 hover:text-brand-cyan transition-colors'
+    ? 'text-sm text-white hover:text-brand-cyan transition-colors'
     : 'text-sm text-content-secondary hover:text-brand transition-colors';
+
+  const navLinkClass = (href: string) => {
+    const active = pathname === href;
+    return `text-sm transition-colors ${
+      active
+        ? 'text-brand-cyan'
+        : isChallenge
+          ? 'text-white hover:text-brand-cyan'
+          : 'text-content-secondary hover:text-brand'
+    }`;
+  };
 
   return (
     <>
@@ -72,7 +92,17 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
           priority
         />
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 md:gap-5">
+        {isChallenge && (
+          <nav className="hidden lg:flex items-center gap-5 mr-1" aria-label="Main">
+            {CHALLENGE_NAV.map((item) => (
+              <Link key={item.href} href={item.href} className={navLinkClass(item.href)}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+
         {user ? (
           <div className="relative">
             <button

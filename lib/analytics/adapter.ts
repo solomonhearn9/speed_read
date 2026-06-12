@@ -1,5 +1,6 @@
 import type { AnalyticsEventName } from '@/lib/types';
 import { createCompositeAdapter } from './adapters/composite';
+import { clarityAnalyticsAdapter } from './adapters/clarity';
 import { posthogAnalyticsAdapter } from './adapters/posthog';
 import { supabaseAnalyticsAdapter } from './adapters/supabase';
 
@@ -10,6 +11,7 @@ export interface AnalyticsAdapter {
 let activeAdapter: AnalyticsAdapter = createCompositeAdapter([
   supabaseAnalyticsAdapter,
   posthogAnalyticsAdapter,
+  clarityAnalyticsAdapter,
 ]);
 
 export function getAnalyticsAdapter(): AnalyticsAdapter {

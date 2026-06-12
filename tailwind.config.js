@@ -45,8 +45,8 @@ module.exports = {
         },
         /* Challenge funnel */
         challenge: {
-          cta: '#EF4444',
-          'cta-hover': '#DC2626',
+          cta: '#38BDF8',
+          'cta-hover': '#0EA5E9',
           'bg-start': '#07111F',
           'bg-end': '#0B172A',
         },

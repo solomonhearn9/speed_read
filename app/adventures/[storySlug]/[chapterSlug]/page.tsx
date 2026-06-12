@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useChapterAbandonment } from '@/lib/analytics';
 import { trackAdventureEvent } from '@/lib/adventures/analytics';
 import type { AdventureChapterDetailResponse, AdventureCompleteResult } from '@/lib/adventures/types';
 import AdventureReader from '@/components/adventures/AdventureReader';
@@ -28,6 +29,18 @@ export default function AdventureChapterPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const startedRef = useRef(false);
+
+  useChapterAbandonment({
+    enabled: phase === 'reader' || phase === 'quiz',
+    phase: phase === 'reader' || phase === 'quiz' ? phase : null,
+    storyId: data?.story.id,
+    storySlug,
+    chapterId: data?.chapter.id,
+    chapterSlug,
+    chapterNumber: data?.chapter_number,
+    wordsRead: readStats?.wordsRead,
+    elapsedSeconds: readStats?.elapsedSeconds,
+  });
 
   const loadChapter = useCallback(async () => {
     setPhase('loading');

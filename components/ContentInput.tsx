@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { useReadingStore } from '@/lib/store';
 import { parseFile, scrapeURL } from '@/lib/contentParsers';
 import { useAuth } from '@/lib/auth-context';
@@ -12,6 +11,7 @@ import { canStartViralTest, getViralTestAttemptCount, incrementViralTestAttemptC
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
+import LandingFeatureCards from './LandingFeatureCards';
 import WordLimitBanner from './WordLimitBanner';
 import AuthModal from './AuthModal';
 import UpgradeModal from './UpgradeModal';
@@ -398,7 +398,7 @@ export default function ContentInput() {
         <div className="relative mb-10 py-8">
           <div className="relative text-center">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-4 leading-tight px-1 tracking-tight">
-              How fast can you read?
+              How <span className="challenge-hero-accent">fast</span> can you read?
             </h1>
             <p className="text-slate-400 text-sm md:text-lg px-1">
               Take the 30-second reading challenge and discover your WPM score.
@@ -426,28 +426,14 @@ export default function ContentInput() {
                 <span>⚫ 900+ WPM</span>
               </span>
             </p>
-            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
-              <Link
-                href="/train"
-                onClick={() => trackEvent('training_path_viewed', { source: 'landing' })}
-                className="text-center text-sm challenge-text-muted hover:text-brand-cyan transition-colors"
-              >
-                Continue Learning →
-              </Link>
-              <span className="hidden sm:inline text-slate-600" aria-hidden="true">·</span>
-              <Link
-                href="/adventures"
-                onClick={() => trackEvent('adventures_home_viewed', { source: 'landing' })}
-                className="text-center text-sm challenge-text-muted hover:text-emerald-400 transition-colors"
-              >
-                Reading Adventures
-                <span className="block text-[10px] text-slate-500">Read stories. Earn XP.</span>
-              </Link>
-            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-8">
+        <div className="max-w-5xl mx-auto -mx-4 md:mx-0 px-4 md:px-0">
+          <LandingFeatureCards />
+        </div>
+
+        <div className="flex items-center gap-4 mb-8 mt-10">
           <div className="challenge-divider" />
           <span className="text-xs challenge-text-muted whitespace-nowrap">or paste your own text</span>
           <div className="challenge-divider" />

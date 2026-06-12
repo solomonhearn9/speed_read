@@ -30,8 +30,9 @@
   --color-error: #EF4444;
 
   /* Challenge (acquisition funnel only) */
-  --challenge-cta: #EF4444;
-  --challenge-cta-hover: #DC2626;
+  --challenge-cta: #38BDF8;
+  --challenge-cta-hover: #0EA5E9;
+  --challenge-cta-text: #0B172A;
   --challenge-bg-start: #07111F;
   --challenge-bg-end: #0B172A;
   --challenge-glow: rgba(56, 189, 248, 0.12);
@@ -165,7 +166,7 @@ body {
   .btn-challenge {
     @apply font-semibold rounded-lg transition-colors;
     background-color: var(--challenge-cta);
-    color: white;
+    color: var(--challenge-cta-text);
   }
 
   .btn-challenge:hover {
@@ -243,6 +244,118 @@ body {
 
   .challenge-text-muted {
     color: var(--challenge-text-muted);
+  }
+
+  .challenge-hero-accent {
+    background: linear-gradient(135deg, #BAE6FD 0%, #38BDF8 50%, #2563EB 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .btn-signup-gradient {
+    background: linear-gradient(90deg, #38BDF8 0%, #2563EB 100%);
+    color: white;
+  }
+
+  .landing-feature-card {
+    @apply relative block overflow-hidden rounded-2xl min-h-[360px] transition-transform duration-200;
+  }
+
+  .landing-feature-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .landing-feature-card--adult {
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 24px rgba(37, 99, 235, 0.12);
+  }
+
+  .landing-feature-card--kids {
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.1);
+  }
+
+  .landing-feature-card__bg {
+    @apply absolute inset-0;
+  }
+
+  .landing-feature-card__overlay {
+    @apply absolute inset-0;
+  }
+
+  .landing-feature-card__overlay--adult {
+    background: linear-gradient(
+      105deg,
+      rgba(7, 17, 31, 0.92) 0%,
+      rgba(7, 17, 31, 0.78) 45%,
+      rgba(7, 17, 31, 0.35) 100%
+    );
+  }
+
+  .landing-feature-card__overlay--kids {
+    background: linear-gradient(
+      105deg,
+      rgba(7, 17, 31, 0.92) 0%,
+      rgba(7, 17, 31, 0.75) 45%,
+      rgba(7, 17, 31, 0.3) 100%
+    );
+  }
+
+  .landing-feature-card__content {
+    @apply relative z-10 flex flex-col h-full p-5 md:p-6;
+    min-height: 360px;
+  }
+
+  .landing-feature-card__icon-ring {
+    @apply inline-flex items-center justify-center rounded-full mb-4;
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .landing-feature-card__icon-ring--adult {
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(37, 99, 235, 0.15) 70%);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+  }
+
+  .landing-feature-card__icon-ring--kids {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(6, 182, 212, 0.12) 70%);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  }
+
+  .landing-feature-card__bullet {
+    @apply inline-flex items-center justify-center shrink-0 rounded-full;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .landing-feature-card__bullet--adult {
+    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
+    color: white;
+  }
+
+  .landing-feature-card__bullet--kids {
+    color: #34d399;
+  }
+
+  .landing-feature-card__cta {
+    @apply mt-auto inline-flex items-center justify-center gap-1.5 w-full font-semibold rounded-full py-3 text-sm md:text-base transition-opacity;
+  }
+
+  .landing-feature-card__cta--adult {
+    background: linear-gradient(180deg, #ffffff 0%, #e0f2fe 100%);
+    color: #2563EB;
+  }
+
+  .landing-feature-card__cta--kids {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+  }
+
+  .group:hover .landing-feature-card__cta--adult,
+  .group:hover .landing-feature-card__cta--kids {
+    opacity: 0.92;
   }
 
   .challenge-divider {

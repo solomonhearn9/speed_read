@@ -106,4 +106,5 @@ export type AnalyticsEventName =
   | 'adventure_retry_clicked'
   | 'adventure_signup_prompt_viewed'
   | 'adventure_signup_clicked'
-  | 'adventure_story_completed';
+  | 'adventure_story_completed'
+  | 'chapter_abandoned';
