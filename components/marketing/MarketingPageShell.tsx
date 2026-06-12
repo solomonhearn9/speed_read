@@ -12,7 +12,7 @@ export default function MarketingPageShell({ children, title, subtitle }: Market
   return (
     <div
       data-theme="challenge"
-      className="min-h-screen w-full bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end text-slate-100 relative overflow-x-hidden"
+      className="challenge-screen w-full text-slate-100 relative overflow-x-hidden"
     >
       <div className="absolute inset-0 challenge-glow pointer-events-none" aria-hidden="true" />
       <AuthHeader theme="challenge" />

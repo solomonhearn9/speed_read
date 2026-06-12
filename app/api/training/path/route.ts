@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 import { ensureFirstLevelUnlocked, resolveProgressStatus } from '@/lib/training/progress';
+import { fetchIsPaidProfile } from '@/lib/profile-server';
 import type { LevelWithProgress, TrainingPathResponse } from '@/lib/training/types';
 
 export async function GET() {
@@ -43,14 +44,19 @@ export async function GET() {
       current_streak: 0,
       longest_streak: 0,
     };
+    let isPaid = false;
 
     const passedLevelNumbers = new Set<number>();
     let lowScoreContinueLevel: number | null = null;
 
     if (user) {
-      const firstLevel = levels.find((l) => l.level_number === 1);
-      if (firstLevel) {
-        await ensureFirstLevelUnlocked(service, user.id, firstLevel.id);
+      isPaid = await fetchIsPaidProfile(service, user.id);
+
+      if (isPaid) {
+        const firstLevel = levels.find((l) => l.level_number === 1);
+        if (firstLevel) {
+          await ensureFirstLevelUnlocked(service, user.id, firstLevel.id);
+        }
       }
 
       const { data: progressRows } = await service
@@ -147,7 +153,8 @@ export async function GET() {
             stored?.status as LevelWithProgress['status'] | undefined ?? null,
             level.level_number,
             passedLevelNumbers,
-            !!user
+            !!user,
+            isPaid
           );
 
           const recommendRetry =
@@ -174,6 +181,7 @@ export async function GET() {
       profile: {
         ...profileProgress,
         is_logged_in: !!user,
+        is_paid: isPaid,
       },
     };
 

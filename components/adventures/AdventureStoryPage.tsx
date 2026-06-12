@@ -55,7 +55,7 @@ export default function AdventureStoryPage({ storySlug }: AdventureStoryPageProp
   }
 
   const { story, chapters, progress, profile: prof } = data;
-  const nextChapter = chapters.find((c) => c.status === 'unlocked') ?? chapters[0];
+  const nextChapter = chapters.find((c) => c.status === 'unlocked');
 
   return (
     <div className="adventure-bg min-h-screen text-white p-6 md:p-8">

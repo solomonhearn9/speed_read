@@ -7,6 +7,8 @@ import { trackAdventureEvent } from '@/lib/adventures/analytics';
 import { STORY_SLUG } from '@/lib/adventures/constants';
 import type { AdventureStoryResponse } from '@/lib/adventures/types';
 import { mapConfigs } from '@/lib/maps/mapConfigs';
+import AuthModal from '@/components/AuthModal';
+import UpgradeModal from '@/components/UpgradeModal';
 import MapProgressScreen, {
   type MapNodeData,
   type MapStatToken,
@@ -55,7 +57,10 @@ function buildNodes(data: AdventureStoryResponse): MapNodeData[] {
       targetWpm: ch.target_wpm,
       xpReward: ch.xp_reward + ch.completion_bonus_xp,
       status,
-      href: `/adventures/${data.story.slug}/${ch.slug}`,
+      href:
+        ch.status === 'locked'
+          ? null
+          : `/adventures/${data.story.slug}/${ch.slug}`,
       stars: ch.status === 'completed' ? 3 : 0,
     };
   });
@@ -65,6 +70,8 @@ export default function AdventureHome() {
   const { user, profile } = useAuth();
   const [data, setData] = useState<AdventureStoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -117,16 +124,49 @@ export default function AdventureHome() {
   ];
 
   return (
-    <MapProgressScreen
-      config={config}
-      nodes={nodes}
-      stats={stats}
-      backHref="/"
-      guestNote={
-        data.profile.is_logged_in
-          ? null
-          : 'Preview Chapter 1 free. Sign up to save XP and unlock Chapter 2.'
-      }
-    />
+    <>
+      <MapProgressScreen
+        config={config}
+        nodes={nodes}
+        stats={stats}
+        backHref="/"
+        guestBanner={
+          data.profile.is_paid
+            ? null
+            : {
+                headline: 'Subscribe to start Chapter 1',
+                detail: data.profile.is_logged_in
+                  ? 'Upgrade to Pro to play the first chapter and save your adventure progress.'
+                  : 'Sign in and subscribe to begin The Lost Crystal Dragon.',
+              }
+        }
+        onGuestSignup={
+          data.profile.is_logged_in ? undefined : () => setShowAuthModal(true)
+        }
+        onSubscriptionGate={() => {
+          if (!data.profile.is_logged_in) {
+            setShowAuthModal(true);
+            return;
+          }
+          setShowUpgradeModal(true);
+        }}
+      />
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="map_subscription_required"
+        onRequireAuth={() => {
+          setShowUpgradeModal(false);
+          setShowAuthModal(true);
+        }}
+        theme="challenge"
+      />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode="signup"
+        theme="challenge"
+      />
+    </>
   );
 }

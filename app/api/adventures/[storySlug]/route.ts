@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { resolveChapterStatus } from '@/lib/adventures/progress';
+import { fetchIsPaidProfile } from '@/lib/profile-server';
 import type { AdventureStoryResponse, ChapterWithStatus } from '@/lib/adventures/types';
 
 export const dynamic = 'force-dynamic';
@@ -33,8 +34,10 @@ export async function GET(
     const completedChapters = new Set<number>();
     const passedChapters = new Set<number>();
     let progress = null;
+    let isPaid = false;
 
     if (user) {
+      isPaid = await fetchIsPaidProfile(service, user.id);
       const { data: userProgress } = await service
         .from('user_adventure_progress')
         .select('*')
@@ -73,11 +76,12 @@ export async function GET(
         ch.chapter_number,
         completedChapters,
         passedChapters,
-        !!user
+        !!user,
+        isPaid
       ),
     }));
 
-    let profileData = { total_xp: 0, reader_level: 1, is_logged_in: !!user };
+    let profileData = { total_xp: 0, reader_level: 1, is_logged_in: !!user, is_paid: isPaid };
     if (user) {
       const { data: profile } = await service
         .from('profiles')
@@ -89,6 +93,7 @@ export async function GET(
           total_xp: profile.total_xp ?? 0,
           reader_level: profile.reader_level ?? 1,
           is_logged_in: true,
+          is_paid: isPaid,
         };
       }
     }

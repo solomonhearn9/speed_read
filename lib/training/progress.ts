@@ -83,11 +83,11 @@ export function resolveProgressStatus(
   stored: LevelProgressStatus | null,
   levelNumber: number,
   passedLevels: Set<number>,
-  isLoggedIn: boolean
+  isLoggedIn: boolean,
+  isPaid: boolean
 ): LevelProgressStatus {
-  if (!isLoggedIn) {
-    return levelNumber === 1 ? 'unlocked' : 'locked';
-  }
+  if (levelNumber === 1 && !isPaid) return 'locked';
+  if (!isLoggedIn) return 'locked';
   if (stored) return stored;
   if (levelNumber === 1) return 'unlocked';
   if (passedLevels.has(levelNumber - 1)) return 'unlocked';

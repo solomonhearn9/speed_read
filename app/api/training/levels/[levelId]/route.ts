@@ -2,7 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-import { ANONYMOUS_PREVIEW_LEVEL_SLUG } from '@/lib/training/constants';
+import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
 import type { QuizQuestionPublic, TrainingLevelDetailResponse } from '@/lib/training/types';
 
 export async function GET(
@@ -25,8 +25,14 @@ export async function GET(
       return NextResponse.json({ error: 'level_not_found' }, { status: 404 });
     }
 
-    if (!user && level.slug !== ANONYMOUS_PREVIEW_LEVEL_SLUG) {
+    if (!user) {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+    }
+
+    const isPaid = await fetchIsPaidProfile(service, user.id);
+    const subscriptionError = mapEntrySubscriptionError(level.level_number, isPaid);
+    if (subscriptionError) {
+      return NextResponse.json({ error: subscriptionError }, { status: 403 });
     }
 
     if (user && level.level_number > 1) {

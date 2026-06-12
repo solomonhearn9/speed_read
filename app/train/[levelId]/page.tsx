@@ -14,6 +14,7 @@ import QuizFlow from '@/components/training/QuizFlow';
 import TrainingResults from '@/components/training/TrainingResults';
 import XPToast from '@/components/training/XPToast';
 import AuthModal from '@/components/AuthModal';
+import UpgradeModal from '@/components/UpgradeModal';
 
 type Phase = 'loading' | 'reader' | 'quiz' | 'results' | 'error';
 
@@ -35,6 +36,7 @@ export default function TrainingLevelPage() {
   const [error, setError] = useState<string | null>(null);
   const [showXpToast, setShowXpToast] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [lastAnswers, setLastAnswers] = useState<Array<{ question_id: string; selected_index: number }>>([]);
   const startedRef = useRef(false);
 
@@ -44,11 +46,18 @@ export default function TrainingLevelPage() {
     try {
       const res = await fetch(`/api/training/levels/${levelId}`);
       if (res.status === 401) {
-        setError('Sign up to access this level, or try Level 1 from the training path.');
+        setError('Sign in to access training levels.');
         setPhase('error');
         return;
       }
       if (res.status === 403) {
+        const payload = await res.json().catch(() => ({}));
+        if (payload.error === 'subscription_required') {
+          setError('Subscribe to Pro to play this level.');
+          setShowUpgradeModal(true);
+          setPhase('error');
+          return;
+        }
         setError('This level is locked. Pass the previous level first.');
         setPhase('error');
         return;
@@ -242,10 +251,28 @@ export default function TrainingLevelPage() {
 
   if (phase === 'error') {
     return (
-      <div data-theme="learning" className="min-h-screen bg-surface-primary flex flex-col items-center justify-center gap-4 p-6">
-        <p className="text-red-500 text-center">{error}</p>
-        <Link href="/train" className="text-content-muted hover:text-brand text-sm">← Training path</Link>
-      </div>
+      <>
+        <div data-theme="learning" className="min-h-screen bg-surface-primary flex flex-col items-center justify-center gap-4 p-6">
+          <p className="text-red-500 text-center">{error}</p>
+          <Link href="/train" className="text-content-muted hover:text-brand text-sm">← Training path</Link>
+        </div>
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="map_subscription_required"
+          onRequireAuth={() => {
+            setShowUpgradeModal(false);
+            setShowAuthModal(true);
+          }}
+          theme="learning"
+        />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode="signup"
+          theme="learning"
+        />
+      </>
     );
   }
 

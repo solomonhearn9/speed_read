@@ -2,7 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-import { ANONYMOUS_PREVIEW_LEVEL_SLUG } from '@/lib/training/constants';
+import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
 import { getNextLevel, unlockNextLevel, updateProfileXpAndStreak } from '@/lib/training/progress';
 import {
   calculateActualWpm,
@@ -51,8 +51,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'level_not_found' }, { status: 404 });
     }
 
-    if (!user && level.slug !== ANONYMOUS_PREVIEW_LEVEL_SLUG) {
+    if (!user) {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+    }
+
+    const isPaid = await fetchIsPaidProfile(service, user.id);
+    const subscriptionError = mapEntrySubscriptionError(level.level_number, isPaid);
+    if (subscriptionError) {
+      return NextResponse.json({ error: subscriptionError }, { status: 403 });
     }
 
     const { data: questions } = await service
@@ -79,38 +85,6 @@ export async function POST(request: Request) {
     const actualWpm = body.actual_wpm ?? calculateActualWpm(wordsRead, elapsedSeconds);
     const passed = questionsCorrect >= level.min_correct_to_pass;
     const mastered = questionsCorrect === questionsTotal;
-
-    if (!user) {
-      const nextLevel = passed
-        ? await getNextLevel(service, level.tier_id, level.level_number)
-        : null;
-
-      const previewResult: AttemptCompleteResult = {
-        attempt_id: '',
-        saved: false,
-        requires_auth: true,
-        level_id: levelId,
-        level_title: level.title,
-        level_number: level.level_number,
-        target_wpm: targetWpm,
-        actual_wpm: actualWpm,
-        questions_correct: questionsCorrect,
-        questions_total: questionsTotal,
-        comprehension_pct: comprehensionPct,
-        passed,
-        mastered,
-        xp_awarded: 0,
-        is_personal_best: false,
-        next_level_id: nextLevel?.id ?? null,
-        next_level_wpm: nextLevel?.target_wpm ?? null,
-        next_level_unlocked: false,
-        reader_level: 1,
-        total_xp: 0,
-        reader_level_up: false,
-        current_streak: 0,
-      };
-      return NextResponse.json(previewResult);
-    }
 
     if (body.continue_anyway && attemptId) {
       const { data: existingAttempt } = await service

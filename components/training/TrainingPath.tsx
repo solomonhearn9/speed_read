@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { trackTrainingEvent } from '@/lib/training/analytics';
 import type { TrainingPathResponse, LevelWithProgress } from '@/lib/training/types';
 import { mapConfigs } from '@/lib/maps/mapConfigs';
+import AuthModal from '@/components/AuthModal';
+import UpgradeModal from '@/components/UpgradeModal';
 import MapProgressScreen, {
   type MapNodeData,
   type MapStatToken,
@@ -64,7 +66,10 @@ function buildNodes(data: TrainingPathResponse): MapNodeData[] {
       targetWpm: api.target_wpm,
       xpReward: api.xp_pass,
       status,
-      href: `/train/${api.id}`,
+      href:
+        api.status === 'locked' || !api
+          ? null
+          : `/train/${api.id}`,
       stars,
       bestWpm: api.best_wpm,
     };
@@ -76,6 +81,8 @@ export default function TrainingPath() {
   const [data, setData] = useState<TrainingPathResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -124,16 +131,49 @@ export default function TrainingPath() {
   ];
 
   return (
-    <MapProgressScreen
-      config={config}
-      nodes={nodes}
-      stats={stats}
-      backHref="/"
-      guestNote={
-        data.profile.is_logged_in
-          ? null
-          : 'Preview Level 1 free. Sign up to save XP and unlock all Bronze levels.'
-      }
-    />
+    <>
+      <MapProgressScreen
+        config={config}
+        nodes={nodes}
+        stats={stats}
+        backHref="/"
+        guestBanner={
+          data.profile.is_paid
+            ? null
+            : {
+                headline: 'Subscribe to start Level 1',
+                detail: data.profile.is_logged_in
+                  ? 'Upgrade to Pro to play the first level and unlock your progress.'
+                  : 'Sign in and subscribe to begin the Reader\'s Journey.',
+              }
+        }
+        onGuestSignup={
+          data.profile.is_logged_in ? undefined : () => setShowAuthModal(true)
+        }
+        onSubscriptionGate={() => {
+          if (!data.profile.is_logged_in) {
+            setShowAuthModal(true);
+            return;
+          }
+          setShowUpgradeModal(true);
+        }}
+      />
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="map_subscription_required"
+        onRequireAuth={() => {
+          setShowUpgradeModal(false);
+          setShowAuthModal(true);
+        }}
+        theme="challenge"
+      />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode="signup"
+        theme="challenge"
+      />
+    </>
   );
 }

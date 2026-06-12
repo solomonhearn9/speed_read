@@ -1,7 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { ANONYMOUS_PREVIEW_CHAPTER_SLUG } from '@/lib/adventures/constants';
 import { resolveChapterStatus } from '@/lib/adventures/progress';
+import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
 import type { AdventureChapterDetailResponse, AdventureQuestionPublic } from '@/lib/adventures/types';
 
 export const dynamic = 'force-dynamic';
@@ -36,14 +36,20 @@ export async function GET(
       return NextResponse.json({ error: 'chapter_not_found' }, { status: 404 });
     }
 
-    if (!user && chapter.slug !== ANONYMOUS_PREVIEW_CHAPTER_SLUG) {
+    if (!user) {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+    }
+
+    const isPaid = await fetchIsPaidProfile(service, user.id);
+    const subscriptionError = mapEntrySubscriptionError(chapter.chapter_number, isPaid);
+    if (subscriptionError) {
+      return NextResponse.json({ error: subscriptionError }, { status: 403 });
     }
 
     const completedChapters = new Set<number>();
     const passedChapters = new Set<number>();
 
-    if (user && chapter.chapter_number > 1) {
+    if (chapter.chapter_number > 1) {
       const { data: userProgress } = await service
         .from('user_adventure_progress')
         .select('chapters_completed')
@@ -79,10 +85,11 @@ export async function GET(
       chapter.chapter_number,
       completedChapters,
       passedChapters,
-      !!user
+      true,
+      isPaid
     );
 
-    if (user && status === 'locked') {
+    if (status === 'locked') {
       return NextResponse.json({ error: 'chapter_locked' }, { status: 403 });
     }
 

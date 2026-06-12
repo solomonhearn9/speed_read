@@ -59,6 +59,7 @@ export interface TrainingPathResponse {
     current_streak: number;
     longest_streak: number;
     is_logged_in: boolean;
+    is_paid: boolean;
   };
 }
 

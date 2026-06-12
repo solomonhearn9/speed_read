@@ -1,6 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { ANONYMOUS_PREVIEW_CHAPTER_SLUG } from '@/lib/adventures/constants';
+import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
 import { gradeAnswers, updateProfileXp } from '@/lib/adventures/progress';
 import type { AdventureCompleteResult } from '@/lib/adventures/types';
 
@@ -45,8 +45,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
-    if (!user && chapter.slug !== ANONYMOUS_PREVIEW_CHAPTER_SLUG) {
+    if (!user) {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
+    }
+
+    const isPaid = await fetchIsPaidProfile(service, user.id);
+    const subscriptionError = mapEntrySubscriptionError(chapter.chapter_number, isPaid);
+    if (subscriptionError) {
+      return NextResponse.json({ error: subscriptionError }, { status: 403 });
     }
 
     const { data: questions } = await service
@@ -60,32 +66,6 @@ export async function POST(request: Request) {
     }
 
     const grade = gradeAnswers(questions, answers);
-
-    if (!user) {
-      const preview: AdventureCompleteResult = {
-        attempt_id: '',
-        saved: false,
-        requires_auth: true,
-        story_id: storyId,
-        story_slug: story.slug,
-        chapter_id: chapterId,
-        chapter_slug: chapter.slug,
-        chapter_number: chapter.chapter_number,
-        chapter_title: chapter.title,
-        questions_correct: grade.correct,
-        questions_total: grade.total,
-        comprehension_pct: grade.pct,
-        passed: grade.passed,
-        xp_awarded: 0,
-        reward_name: chapter.reward_name,
-        story_completed: false,
-        next_chapter_slug: null,
-        next_chapter_unlocked: false,
-        total_xp: 0,
-        reader_level: 1,
-      };
-      return NextResponse.json(preview);
-    }
 
     let xpAwarded = grade.passed ? chapter.xp_reward : Math.max(5, Math.floor(chapter.xp_reward / 5));
     const storyCompleted = grade.passed && chapter.chapter_number === story.total_chapters;

@@ -5,6 +5,8 @@ import Providers from '@/components/Providers'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#07111F',
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://speedread.cc'

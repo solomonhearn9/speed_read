@@ -99,10 +99,12 @@
 
 html {
   overflow-x: hidden;
+  background-color: var(--challenge-bg-start);
 }
 
 body {
   @apply antialiased min-h-screen overflow-x-hidden;
+  background-color: var(--challenge-bg-start);
 }
 
 /* Custom scrollbar — adapts to theme */
@@ -188,6 +190,24 @@ body {
   }
 
   /* ─── Challenge funnel surfaces ─── */
+  .challenge-screen {
+    min-height: 100dvh;
+    position: relative;
+    isolation: isolate;
+  }
+
+  .challenge-screen::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      180deg,
+      var(--challenge-bg-start) 0%,
+      var(--challenge-bg-end) 100%
+    );
+  }
+
   .challenge-glow {
     background: radial-gradient(
       ellipse 80% 60% at 50% 40%,

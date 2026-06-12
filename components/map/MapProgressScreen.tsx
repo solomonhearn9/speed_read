@@ -40,12 +40,21 @@ export interface MapStatToken {
   label: string;
 }
 
+export interface MapGuestBanner {
+  headline: string;
+  detail: string;
+}
+
 interface MapProgressScreenProps {
   config: MapConfig;
   nodes: MapNodeData[];
   stats: MapStatToken[];
   backHref?: string;
-  guestNote?: string | null;
+  guestBanner?: MapGuestBanner | null;
+  onGuestSignup?: () => void;
+  /** Level/chapter numbers that require subscription instead of progression unlock. */
+  subscriptionGatedLevels?: number[];
+  onSubscriptionGate?: () => void;
 }
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
@@ -90,6 +99,24 @@ const STATUS_LABEL: Record<MapNodeStatus, string> = {
   mastered: 'Mastered',
 };
 
+function LockIcon() {
+  return (
+    <svg
+      className="map-node-lock-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
 /* ── Component ──────────────────────────────────────────────────────────── */
 
 export default function MapProgressScreen({
@@ -97,7 +124,10 @@ export default function MapProgressScreen({
   nodes,
   stats,
   backHref = '/',
-  guestNote,
+  guestBanner,
+  onGuestSignup,
+  subscriptionGatedLevels = [1],
+  onSubscriptionGate,
 }: MapProgressScreenProps) {
   const breakpoint = useBreakpoint();
   const [selected, setSelected] = useState<MapNodeData | null>(null);
@@ -147,6 +177,14 @@ export default function MapProgressScreen({
 
   const handleNodeTap = (node: MapNodeData) => {
     if (node.status === 'locked' || node.status === 'coming-soon') {
+      if (
+        node.status === 'locked' &&
+        subscriptionGatedLevels.includes(node.levelNumber) &&
+        onSubscriptionGate
+      ) {
+        onSubscriptionGate();
+        return;
+      }
       const msg =
         node.status === 'coming-soon'
           ? 'This level is coming soon!'
@@ -192,14 +230,25 @@ export default function MapProgressScreen({
       </header>
 
       {/* ── Map panel ── */}
-      <main className="max-w-6xl mx-auto md:px-6 md:py-8">
-        {guestNote && (
-          <div className="mx-4 md:mx-0 mt-3 md:mt-0 md:mb-4 px-4 py-2.5 rounded-xl map-glass text-xs text-amber-300/90">
-            {guestNote}
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-8">
+        {guestBanner && (
+          <div className="map-guest-banner mb-3 md:mb-4">
+            <span className="map-guest-banner-icon" aria-hidden="true">
+              ✦
+            </span>
+            <div className="map-guest-banner-copy">
+              <p className="map-guest-banner-headline">{guestBanner.headline}</p>
+              <p className="map-guest-banner-detail">{guestBanner.detail}</p>
+            </div>
+            {onGuestSignup && (
+              <button type="button" className="map-guest-banner-cta" onClick={onGuestSignup}>
+                Sign up
+              </button>
+            )}
           </div>
         )}
 
-        <div className="map-frame md:rounded-3xl md:overflow-hidden md:bg-black/30 mt-3 md:mt-0">
+        <div className="map-frame">
           {!layout ? (
             <div className="h-[60vh] flex items-center justify-center text-slate-500 text-sm">
               Loading map...
@@ -219,34 +268,35 @@ export default function MapProgressScreen({
                 className="object-cover pointer-events-none"
               />
 
-              {/* progression path */}
-              {points.length >= 2 && (
+              {/* edge vignette — keeps labels/nodes readable over busy art */}
+              <div className="map-vignette pointer-events-none" aria-hidden="true" />
+
+              {/* soft progress glow along completed segments */}
+              {points.length >= 2 && currentIndex > 0 && (
                 <svg
                   className="absolute inset-0 w-full h-full pointer-events-none z-[4]"
                   viewBox={`0 0 100 ${viewH}`}
                   preserveAspectRatio="none"
                   aria-hidden="true"
                 >
-                  <path className="map-path-base" d={buildPathD(points)} strokeWidth={0.9} />
-                  {currentIndex > 0 && (
-                    <path
-                      className="map-path-progress"
-                      d={buildPathD(points.slice(0, currentIndex + 1))}
-                      strokeWidth={0.9}
-                    />
-                  )}
+                  <path
+                    className="map-path-progress"
+                    d={buildPathD(points.slice(0, currentIndex + 1))}
+                    strokeWidth={2.2}
+                  />
                 </svg>
               )}
 
               {/* region labels */}
               {layout.regionLabels.map((r) => (
-                <span
+                <div
                   key={r.label}
                   className="map-region-label"
                   style={{ left: `${r.x}%`, top: `${r.y}%` }}
                 >
-                  {r.label}
-                </span>
+                  <span className="map-region-marker" aria-hidden="true" />
+                  <span>{r.label}</span>
+                </div>
               ))}
 
               {/* level nodes */}
@@ -278,18 +328,26 @@ export default function MapProgressScreen({
                     )}
                     <span className="map-node-circle">
                       {node.status === 'locked' || node.status === 'coming-soon' ? (
-                        <span aria-hidden="true" className="text-base">
-                          🔒
-                        </span>
+                        <LockIcon />
                       ) : done ? (
-                        <span aria-hidden="true">✓</span>
+                        <span aria-hidden="true" className="map-node-check">✓</span>
                       ) : (
                         node.levelNumber
                       )}
                     </span>
-                    <span className="map-node-label">
-                      {node.status === 'coming-soon' ? 'Coming soon' : node.title}
-                    </span>
+                    {node.status !== 'current' && (
+                      <span className="map-node-label">
+                        {node.status === 'coming-soon' ? 'Coming soon' : node.title}
+                      </span>
+                    )}
+                    {node.status === 'current' && (
+                      <span className="map-node-current-chip">
+                        <span className="map-node-current-level">
+                          {config.theme === 'kids' ? 'Ch.' : 'Lv.'} {node.levelNumber}
+                        </span>
+                        <span className="map-node-current-title">{node.title}</span>
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -364,7 +422,8 @@ export default function MapProgressScreen({
       {/* ── Locked toast ── */}
       {lockedToast && (
         <div className="map-toast map-glass" role="status">
-          🔒 {lockedToast}
+          <LockIcon />
+          <span>{lockedToast}</span>
         </div>
       )}
     </div>

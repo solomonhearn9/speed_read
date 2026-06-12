@@ -53,7 +53,7 @@ export interface AdventureStoryResponse {
   story: AdventureStory;
   chapters: ChapterWithStatus[];
   progress: UserAdventureProgress | null;
-  profile: { total_xp: number; reader_level: number; is_logged_in: boolean };
+  profile: { total_xp: number; reader_level: number; is_logged_in: boolean; is_paid: boolean };
 }
 
 export interface AdventureChapterDetailResponse {

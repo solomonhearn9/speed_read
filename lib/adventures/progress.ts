@@ -7,11 +7,11 @@ export function resolveChapterStatus(
   chapterNumber: number,
   completedChapters: Set<number>,
   passedChapters: Set<number>,
-  isLoggedIn: boolean
+  isLoggedIn: boolean,
+  isPaid: boolean
 ): ChapterStatus {
-  if (!isLoggedIn) {
-    return chapterNumber === 1 ? 'unlocked' : 'locked';
-  }
+  if (chapterNumber === 1 && !isPaid) return 'locked';
+  if (!isLoggedIn) return 'locked';
   if (completedChapters.has(chapterNumber)) return 'completed';
   if (chapterNumber === 1) return 'unlocked';
   if (passedChapters.has(chapterNumber - 1)) return 'unlocked';

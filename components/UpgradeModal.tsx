@@ -14,7 +14,8 @@ type UpgradeReason =
   | 'challenge_limit'
   | 'training_limit'
   | 'level_locked'
-  | 'advanced_training';
+  | 'advanced_training'
+  | 'map_subscription_required';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -60,6 +61,10 @@ const REASON_COPY: Record<UpgradeReason, { title: string; body: string }> = {
   advanced_training: {
     title: 'Unlock advanced training',
     body: 'Access higher-speed levels and endurance modes with a Pro plan.',
+  },
+  map_subscription_required: {
+    title: 'Subscribe to start',
+    body: 'The first level requires a Pro subscription. Upgrade to play and save your progress.',
   },
 };
 

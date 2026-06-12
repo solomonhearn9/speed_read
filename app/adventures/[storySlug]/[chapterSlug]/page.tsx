@@ -11,6 +11,7 @@ import AdventureReader from '@/components/adventures/AdventureReader';
 import AdventureQuizFlow from '@/components/adventures/AdventureQuizFlow';
 import AdventureResults from '@/components/adventures/AdventureResults';
 import AuthModal from '@/components/AuthModal';
+import UpgradeModal from '@/components/UpgradeModal';
 import '@/components/adventures/adventure-theme.css';
 
 type Phase = 'loading' | 'reader' | 'quiz' | 'results' | 'error';
@@ -28,6 +29,7 @@ export default function AdventureChapterPage() {
   const [result, setResult] = useState<AdventureCompleteResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const startedRef = useRef(false);
 
   useChapterAbandonment({
@@ -48,11 +50,18 @@ export default function AdventureChapterPage() {
     try {
       const res = await fetch(`/api/adventures/${storySlug}/chapters/${chapterSlug}`);
       if (res.status === 401) {
-        setError('Sign up to read more chapters, or start Chapter 1 from the adventures home.');
+        setError('Sign in to read adventure chapters.');
         setPhase('error');
         return;
       }
       if (res.status === 403) {
+        const payload = await res.json().catch(() => ({}));
+        if (payload.error === 'subscription_required') {
+          setError('Subscribe to Pro to play this chapter.');
+          setShowUpgradeModal(true);
+          setPhase('error');
+          return;
+        }
         setError('This chapter is locked. Pass the previous chapter first.');
         setPhase('error');
         return;
@@ -193,10 +202,26 @@ export default function AdventureChapterPage() {
 
   if (phase === 'error') {
     return (
-      <div className="adventure-bg min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-red-400">
-        <p className="text-center">{error}</p>
-        <Link href="/adventures" className="text-gray-400 text-sm">← Adventures</Link>
-      </div>
+      <>
+        <div className="adventure-bg min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-red-400">
+          <p className="text-center">{error}</p>
+          <Link href="/adventures" className="text-gray-400 text-sm">← Adventures</Link>
+        </div>
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="map_subscription_required"
+          onRequireAuth={() => {
+            setShowUpgradeModal(false);
+            setShowAuthModal(true);
+          }}
+        />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode="signup"
+        />
+      </>
     );
   }
 
