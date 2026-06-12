@@ -37,6 +37,7 @@ export default function ReadingView() {
   const viralSpeedRef = useRef<number | null>(null);
   const viralCompletingRef = useRef(false);
   const [viralSecondsRemaining, setViralSecondsRemaining] = useState(VIRAL_TEST_DURATION_SEC);
+  const [viralElapsedMs, setViralElapsedMs] = useState(0);
 
   const finishViralTest = useCallback((elapsedMs: number) => {
     if (viralCompletingRef.current || useReadingStore.getState().viralTestResults) return;
@@ -71,6 +72,7 @@ export default function ReadingView() {
         const elapsedMs = viralActiveMsRef.current + (Date.now() - playStart);
         const remainingSec = Math.max(0, Math.ceil((VIRAL_TEST_DURATION_SEC * 1000 - elapsedMs) / 1000));
         setViralSecondsRemaining(remainingSec);
+        setViralElapsedMs(elapsedMs);
 
         const targetWpm = getViralTestWpmAtElapsedMs(elapsedMs);
         if (viralSpeedRef.current !== targetWpm) {
@@ -116,6 +118,7 @@ export default function ReadingView() {
       viralSpeedRef.current = null;
       viralCompletingRef.current = false;
       setViralSecondsRemaining(VIRAL_TEST_DURATION_SEC);
+      setViralElapsedMs(0);
     }
   }, [sessionMode, viralTestResults, processedWords.length]);
 
@@ -318,6 +321,7 @@ export default function ReadingView() {
       />
       <ReadingControls
         viralSecondsRemaining={isViral ? viralSecondsRemaining : undefined}
+        viralElapsedMs={isViral ? viralElapsedMs : undefined}
       />
     </div>
   );

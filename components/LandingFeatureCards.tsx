@@ -44,7 +44,7 @@ function DiamondIcon() {
 
 export default function LandingFeatureCards() {
   return (
-    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6 w-full">
       <Link
         href="/train"
         onClick={() => trackEvent('training_path_viewed', { source: 'landing' })}

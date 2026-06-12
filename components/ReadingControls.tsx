@@ -5,9 +5,10 @@ import { VIRAL_TEST_DURATION_SEC } from '@/lib/viralTest';
 
 interface ReadingControlsProps {
   viralSecondsRemaining?: number;
+  viralElapsedMs?: number;
 }
 
-export default function ReadingControls({ viralSecondsRemaining }: ReadingControlsProps) {
+export default function ReadingControls({ viralSecondsRemaining, viralElapsedMs }: ReadingControlsProps) {
   const {
     isPlaying,
     togglePlay,
@@ -25,8 +26,8 @@ export default function ReadingControls({ viralSecondsRemaining }: ReadingContro
   } = useReadingStore();
 
   const isViralTest = sessionMode === 'viral_test';
-  const viralTimeProgress = viralSecondsRemaining !== undefined
-    ? ((VIRAL_TEST_DURATION_SEC - viralSecondsRemaining) / VIRAL_TEST_DURATION_SEC) * 100
+  const viralTimeProgress = viralElapsedMs !== undefined
+    ? Math.min(100, (viralElapsedMs / (VIRAL_TEST_DURATION_SEC * 1000)) * 100)
     : 0;
 
   const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +74,7 @@ export default function ReadingControls({ viralSecondsRemaining }: ReadingContro
         </div>
         <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
           <div
-            className="h-full transition-all duration-300 bg-challenge-cta rounded-full"
+            className={`h-full bg-challenge-cta rounded-full ${isViralTest ? '' : 'transition-all duration-300'}`}
             style={{ width: `${isViralTest ? viralTimeProgress : progress}%` }}
           />
         </div>

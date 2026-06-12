@@ -390,33 +390,31 @@ export default function ContentInput() {
   }
 
   return (
-    <div data-theme="challenge" className="min-h-screen bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end text-slate-100 p-8 relative overflow-hidden">
+    <div data-theme="challenge" className="min-h-screen w-full bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end text-slate-100 relative overflow-x-hidden">
       <div className="absolute inset-0 challenge-glow pointer-events-none" aria-hidden="true" />
       <AuthHeader theme="challenge" />
 
-      <div className="max-w-3xl mx-auto px-4 md:px-0 pt-12">
-        <div className="relative mb-10 py-8">
-          <div className="relative text-center">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-4 leading-tight px-1 tracking-tight">
-              How <span className="challenge-hero-accent">fast</span> can you read?
-            </h1>
-            <p className="text-slate-400 text-sm md:text-lg px-1">
-              Take the 30-second reading challenge and discover your WPM score.
-            </p>
-          </div>
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 sm:pb-12">
+        <section className="max-w-3xl mx-auto pt-6 sm:pt-8 md:pt-10 text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-3 sm:mb-4 leading-tight tracking-tight">
+            How <span className="challenge-hero-accent">fast</span> can you read?
+          </h1>
+          <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
+            Take the 30-second reading challenge and discover your WPM score.
+          </p>
 
-          <div className="relative mt-8">
+          <div className="mt-6 sm:mt-8">
             <button
               onClick={handleViralTest}
-              className="w-full px-6 py-4 btn-challenge text-base md:text-lg"
+              className="w-full max-w-xl mx-auto px-6 py-3.5 sm:py-4 btn-challenge text-base md:text-lg"
             >
               Start the 30-Second Challenge
             </button>
             <p className="mt-3 text-center text-[10px] sm:text-xs challenge-text-muted">
               Average reader ≈ 200 WPM
             </p>
-            <p className="mt-1.5 text-center text-[10px] sm:text-xs challenge-text-muted leading-relaxed px-1">
-              <span className="inline-flex flex-wrap justify-center gap-x-2 gap-y-1.5 max-w-full">
+            <p className="mt-1.5 text-center text-[10px] sm:text-xs challenge-text-muted leading-relaxed">
+              <span className="inline-flex flex-wrap justify-center gap-x-2 gap-y-1.5">
                 <span>🟢 300 WPM</span>
                 <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
                 <span>🟡 500 WPM</span>
@@ -427,22 +425,23 @@ export default function ContentInput() {
               </span>
             </p>
           </div>
-        </div>
+        </section>
 
-        <div className="max-w-5xl mx-auto -mx-4 md:mx-0 px-4 md:px-0">
+        <section className="max-w-5xl mx-auto mt-8 sm:mt-10 w-full">
           <LandingFeatureCards />
+        </section>
+
+        <section className="max-w-3xl mx-auto mt-10 sm:mt-12 w-full">
+        <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="challenge-divider" />
+          <span className="text-xs sm:text-sm challenge-text-muted whitespace-nowrap">or paste your own text</span>
+          <div className="challenge-divider" />
         </div>
 
-        <div className="flex items-center gap-4 mb-8 mt-10">
-          <div className="challenge-divider" />
-          <span className="text-xs challenge-text-muted whitespace-nowrap">or paste your own text</span>
-          <div className="challenge-divider" />
-        </div>
-
-        <div className="flex gap-2 mb-6 border-b border-white/10">
+        <div className="flex gap-1 sm:gap-2 mb-6 border-b border-white/10 overflow-x-auto scrollbar-none">
           <button
             onClick={() => handleTabSwitch('text')}
-            className={`px-4 py-2 font-medium transition-colors ${
+            className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
               inputMethod === 'text'
                 ? 'text-white border-b-2 border-challenge-cta'
                 : 'text-slate-400 hover:text-white'
@@ -452,7 +451,7 @@ export default function ContentInput() {
           </button>
           <button
             onClick={() => handleTabSwitch('file')}
-            className={`px-4 py-2 font-medium transition-colors ${
+            className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
               inputMethod === 'file'
                 ? 'text-white border-b-2 border-challenge-cta'
                 : 'text-slate-400 hover:text-white'
@@ -462,7 +461,7 @@ export default function ContentInput() {
           </button>
           <button
             onClick={() => handleTabSwitch('url')}
-            className={`px-4 py-2 font-medium transition-colors ${
+            className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
               inputMethod === 'url'
                 ? 'text-white border-b-2 border-challenge-cta'
                 : 'text-slate-400 hover:text-white'
@@ -539,7 +538,7 @@ export default function ContentInput() {
 
         {inputMethod === 'file' && (
           <div>
-            <div className="border-2 border-dashed border-white/10 rounded-xl p-12 text-center hover:border-brand-cyan/30 transition-colors challenge-surface">
+            <div className="border-2 border-dashed border-white/10 rounded-xl p-6 sm:p-10 md:p-12 text-center hover:border-brand-cyan/30 transition-colors challenge-surface">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -603,9 +602,9 @@ export default function ContentInput() {
           </div>
         )}
 
-        <div className="mt-12 p-6 challenge-surface">
-          <h2 className="text-xl font-bold mb-4">How it works</h2>
-          <ul className="space-y-2.5 challenge-text-muted">
+        <div className="mt-10 sm:mt-12 p-4 sm:p-6 challenge-surface rounded-xl">
+          <h2 className="text-lg sm:text-xl font-bold mb-4">How it works</h2>
+          <ul className="space-y-2.5 text-sm sm:text-base challenge-text-muted">
             <li>• Words appear one at a time in the center of the screen</li>
             <li>• The red anchor character helps your eyes focus</li>
             <li>• Adjust speed with the slider (100-1000 WPM)</li>
@@ -614,7 +613,8 @@ export default function ContentInput() {
             <li>• Press ESC or click &quot;Full Text View&quot; to see the full document</li>
           </ul>
         </div>
-      </div>
+        </section>
+      </main>
 
       <AuthModal
         isOpen={showAuthModal}

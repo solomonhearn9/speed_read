@@ -97,8 +97,12 @@
   --brand-primary-hover: #6D28D9;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
-  @apply antialiased;
+  @apply antialiased min-h-screen overflow-x-hidden;
 }
 
 /* Custom scrollbar — adapts to theme */
@@ -260,7 +264,7 @@ body {
   }
 
   .landing-feature-card {
-    @apply relative block overflow-hidden rounded-2xl min-h-[360px] transition-transform duration-200;
+    @apply relative block overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[320px] lg:min-h-[360px] transition-transform duration-200;
   }
 
   .landing-feature-card:hover {
@@ -304,8 +308,8 @@ body {
   }
 
   .landing-feature-card__content {
-    @apply relative z-10 flex flex-col h-full p-5 md:p-6;
-    min-height: 360px;
+    @apply relative z-10 flex flex-col h-full p-4 sm:p-5 md:p-6;
+    min-height: inherit;
   }
 
   .landing-feature-card__icon-ring {
@@ -356,6 +360,15 @@ body {
   .group:hover .landing-feature-card__cta--adult,
   .group:hover .landing-feature-card__cta--kids {
     opacity: 0.92;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 
   .challenge-divider {
