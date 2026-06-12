@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS analytics_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- If analytics_events pre-existed (e.g. from an earlier setup), ensure required columns exist
+ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES profiles(id) ON DELETE SET NULL;
+ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS event_name TEXT;
+ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS properties JSONB DEFAULT '{}';
+ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
 CREATE INDEX IF NOT EXISTS idx_analytics_events_name ON analytics_events(event_name);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_daily_usage_user_date ON daily_session_usage(user_id, session_date);
@@ -55,26 +61,32 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_session_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
 CREATE POLICY "Users can read own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can read own session usage" ON daily_session_usage;
 CREATE POLICY "Users can read own session usage"
   ON daily_session_usage FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role manages profiles" ON profiles;
 CREATE POLICY "Service role manages profiles"
   ON profiles FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role manages session usage" ON daily_session_usage;
 CREATE POLICY "Service role manages session usage"
   ON daily_session_usage FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Anyone can insert analytics" ON analytics_events;
 CREATE POLICY "Anyone can insert analytics"
   ON analytics_events FOR INSERT
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role reads analytics" ON analytics_events;
 CREATE POLICY "Service role reads analytics"
   ON analytics_events FOR SELECT
   USING (auth.role() = 'service_role');

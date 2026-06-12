@@ -33,6 +33,7 @@ export interface ReadingState {
   // Viral reading test
   sessionMode: SessionMode;
   viralTestResults: ViralTestResults | null;
+  landingInputMethod: 'text' | 'file' | null;
   
   // Progress
   progress: number;
@@ -54,6 +55,8 @@ export interface ReadingState {
   startViralTest: () => void;
   completeViralTest: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => void;
   clearViralTestResults: () => void;
+  clearLandingInputMethod: () => void;
+  returnToLanding: (inputMethod?: 'text' | 'file') => void;
   reset: () => void;
 }
 
@@ -66,6 +69,7 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
   viewMode: 'reading',
   sessionMode: 'normal',
   viralTestResults: null,
+  landingInputMethod: null,
   progress: 0,
 
   setText: (text: string) => {
@@ -197,6 +201,24 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
     set({ viralTestResults: null });
   },
 
+  clearLandingInputMethod: () => {
+    set({ landingInputMethod: null });
+  },
+
+  returnToLanding: (inputMethod = 'text') => {
+    set({
+      rawText: '',
+      processedWords: [],
+      currentIndex: 0,
+      isPlaying: false,
+      progress: 0,
+      viewMode: 'reading',
+      sessionMode: 'normal',
+      viralTestResults: null,
+      landingInputMethod: inputMethod,
+    });
+  },
+
   reset: () => {
     set({
       rawText: '',
@@ -207,6 +229,7 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
       viewMode: 'reading',
       sessionMode: 'normal',
       viralTestResults: null,
+      landingInputMethod: null,
     });
   },
 }));

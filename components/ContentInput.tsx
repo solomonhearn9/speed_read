@@ -352,6 +352,25 @@ export default function ContentInput() {
   };
 
   const hasContent = useReadingStore((state) => state.processedWords.length > 0);
+  const landingInputMethod = useReadingStore((state) => state.landingInputMethod);
+  const clearLandingInputMethod = useReadingStore((state) => state.clearLandingInputMethod);
+
+  useEffect(() => {
+    if (hasContent || !landingInputMethod) return;
+
+    if (landingInputMethod === 'file' && !usage.canUpload) {
+      trackEvent('upload_gate_viewed');
+      setUpgradeReason('upload');
+      setShowUpgradeModal(true);
+    }
+
+    setInputMethod(landingInputMethod);
+    if (landingInputMethod === 'text') {
+      requestAnimationFrame(() => textareaRef.current?.focus());
+    }
+    clearLandingInputMethod();
+  }, [hasContent, landingInputMethod, usage.canUpload, clearLandingInputMethod]);
+
   if (hasContent) {
     return (
       <>
