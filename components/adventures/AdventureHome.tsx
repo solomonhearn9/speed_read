@@ -1,22 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { trackAdventureEvent } from '@/lib/adventures/analytics';
 import { STORY_SLUG } from '@/lib/adventures/constants';
-import type { AdventuresListResponse } from '@/lib/adventures/types';
-import './adventure-theme.css';
+import type { AdventureStoryResponse } from '@/lib/adventures/types';
+import { mapConfigs } from '@/lib/maps/mapConfigs';
+import MapProgressScreen, {
+  type MapNodeData,
+  type MapStatToken,
+} from '@/components/map/MapProgressScreen';
+
+const config = mapConfigs.kids;
+
+/**
+ * Merge the kids map config (visual layout + fallback meta) with live chapter
+ * data from /api/adventures/[storySlug]. Config node N maps to chapter N.
+ */
+function buildNodes(data: AdventureStoryResponse): MapNodeData[] {
+  const chapters = data.chapters;
+  const currentId = chapters.find((c) => c.status === 'unlocked')?.id ?? null;
+
+  return config.levels.map((meta, i) => {
+    const ch = chapters[i];
+    if (!ch) {
+      return {
+        id: meta.id,
+        levelNumber: meta.levelNumber,
+        title: meta.title,
+        description: meta.description,
+        region: meta.region,
+        targetWpm: meta.targetWpm,
+        xpReward: meta.xpReward,
+        status: 'coming-soon' as const,
+        href: null,
+        stars: 0,
+      };
+    }
+
+    const status =
+      ch.status === 'unlocked'
+        ? ch.id === currentId
+          ? ('current' as const)
+          : ('unlocked' as const)
+        : ch.status;
+
+    return {
+      id: meta.id,
+      levelNumber: ch.chapter_number,
+      title: ch.title,
+      description: meta.description,
+      region: meta.region,
+      targetWpm: ch.target_wpm,
+      xpReward: ch.xp_reward + ch.completion_bonus_xp,
+      status,
+      href: `/adventures/${data.story.slug}/${ch.slug}`,
+      stars: ch.status === 'completed' ? 3 : 0,
+    };
+  });
+}
 
 export default function AdventureHome() {
   const { user, profile } = useAuth();
-  const [data, setData] = useState<AdventuresListResponse | null>(null);
+  const [data, setData] = useState<AdventureStoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/adventures');
+        const res = await fetch(`/api/adventures/${STORY_SLUG}`);
         if (!res.ok) throw new Error('load failed');
         const json = await res.json();
         setData(json);
@@ -30,77 +83,50 @@ export default function AdventureHome() {
     void load();
   }, [user, profile]);
 
-  const story = data?.stories?.[0];
-  const progress = story?.progress;
-  const chaptersDone = progress?.chapters_completed ?? 0;
-  const totalChapters = story?.total_chapters ?? 5;
-  const ctaLabel =
-    chaptersDone === 0
-      ? 'Start Chapter 1'
-      : chaptersDone >= totalChapters
-        ? 'Replay Story'
-        : 'Continue Story';
+  const nodes = useMemo(() => (data ? buildNodes(data) : []), [data]);
+
+  if (loading) {
+    return (
+      <div className="map-screen map-theme-kids min-h-screen flex items-center justify-center">
+        <p className="text-slate-400 text-sm">Loading your adventure...</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="map-screen map-theme-kids min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <p className="text-red-400">Could not load adventures. Apply migration 005_adventures.sql.</p>
+        <Link href="/" className="text-slate-400 hover:text-white text-sm">
+          ← Back home
+        </Link>
+      </div>
+    );
+  }
+
+  const chaptersDone = data.progress?.chapters_completed ?? 0;
+  const stats: MapStatToken[] = [
+    { id: 'xp', icon: '✦', value: data.profile.total_xp.toLocaleString(), label: 'Total XP' },
+    {
+      id: 'gems',
+      icon: '💎',
+      value: `${chaptersDone}/${data.story.total_chapters}`,
+      label: 'Chapters completed',
+    },
+    { id: 'level', icon: '🐉', value: `Lv ${data.profile.reader_level}`, label: 'Reader level' },
+  ];
 
   return (
-    <div className="adventure-bg min-h-screen text-white p-6 md:p-8">
-      <div className="max-w-lg mx-auto">
-        <Link href="/" className="text-sm text-gray-400 hover:text-cyan-300 mb-6 inline-block">
-          ← Back
-        </Link>
-
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-          Reading Adventures
-        </h1>
-        <p className="text-gray-400 text-sm md:text-base mb-8">
-          Read short story quests and unlock the next chapter.
-        </p>
-
-        {loading && <p className="text-gray-500">Loading adventures...</p>}
-
-        {story && (
-          <div className="adventure-card adventure-portal-glow rounded-xl p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <span className="text-3xl" aria-hidden="true">🐉</span>
-              <div>
-                <h2 className="text-xl font-bold text-white">{story.title}</h2>
-                <p className="text-gray-400 text-sm mt-2 leading-relaxed">{story.description}</p>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-                <span>Story progress</span>
-                <span className="tabular-nums">
-                  {user ? `${chaptersDone} / ${totalChapters} chapters` : 'Chapter 1 of 5'}
-                </span>
-              </div>
-              <div className="h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
-                <div
-                  className="h-full adventure-xp-bar transition-all"
-                  style={{ width: `${(chaptersDone / totalChapters) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {!user && (
-              <p className="text-xs text-amber-300/80 mb-4">
-                Preview Chapter 1 free. Sign up to save XP and unlock Chapter 2.
-              </p>
-            )}
-
-            <Link
-              href={`/adventures/${story.slug || STORY_SLUG}`}
-              className="block w-full text-center px-6 py-3 adventure-btn-primary text-white font-semibold rounded-lg transition-all"
-            >
-              {ctaLabel}
-            </Link>
-          </div>
-        )}
-
-        {!loading && !story && (
-          <p className="text-red-400">Could not load adventures. Apply migration 005_adventures.sql.</p>
-        )}
-      </div>
-    </div>
+    <MapProgressScreen
+      config={config}
+      nodes={nodes}
+      stats={stats}
+      backHref="/"
+      guestNote={
+        data.profile.is_logged_in
+          ? null
+          : 'Preview Chapter 1 free. Sign up to save XP and unlock Chapter 2.'
+      }
+    />
   );
 }

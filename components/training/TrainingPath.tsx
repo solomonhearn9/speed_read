@@ -1,15 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { trackTrainingEvent } from '@/lib/training/analytics';
-import { READER_LEVEL_XP_STEP } from '@/lib/training/xp';
-import type { TrainingPathResponse } from '@/lib/training/types';
-import TrainingLevelCard from './TrainingLevelCard';
-import LevelBadge from './LevelBadge';
-import StreakBadge from './StreakBadge';
-import XPBar from './XPBar';
+import type { TrainingPathResponse, LevelWithProgress } from '@/lib/training/types';
+import { mapConfigs } from '@/lib/maps/mapConfigs';
+import MapProgressScreen, {
+  type MapNodeData,
+  type MapStatToken,
+} from '@/components/map/MapProgressScreen';
+
+const config = mapConfigs.adult;
+
+/**
+ * Merge the map config (visual layout + fallback meta) with live training
+ * data from /api/training/path. Config node N maps to the Nth level in the
+ * database; config nodes beyond the seeded levels render as "coming soon".
+ */
+function buildNodes(data: TrainingPathResponse): MapNodeData[] {
+  const apiLevels: LevelWithProgress[] = data.tiers.flatMap((t) => t.levels);
+
+  // The first unlocked-but-not-completed level is the player's current node.
+  const currentId = apiLevels.find((l) => l.status === 'unlocked')?.id ?? null;
+
+  return config.levels.map((meta, i) => {
+    const api = apiLevels[i];
+    if (!api) {
+      return {
+        id: meta.id,
+        levelNumber: meta.levelNumber,
+        title: meta.title,
+        description: meta.description,
+        region: meta.region,
+        targetWpm: meta.targetWpm,
+        xpReward: meta.xpReward,
+        status: 'coming-soon' as const,
+        href: null,
+        stars: 0,
+      };
+    }
+
+    const status =
+      api.status === 'unlocked'
+        ? api.id === currentId
+          ? ('current' as const)
+          : ('unlocked' as const)
+        : api.status;
+
+    const stars =
+      api.status === 'mastered'
+        ? 3
+        : api.status === 'completed'
+          ? Math.min(3, Math.max(1, api.best_quiz_score ?? 1))
+          : 0;
+
+    return {
+      id: meta.id,
+      levelNumber: api.level_number,
+      title: api.title,
+      description: meta.description,
+      region: meta.region,
+      targetWpm: api.target_wpm,
+      xpReward: api.xp_pass,
+      status,
+      href: `/train/${api.id}`,
+      stars,
+      bestWpm: api.best_wpm,
+    };
+  });
+}
 
 export default function TrainingPath() {
   const { user, profile } = useAuth();
@@ -36,76 +96,44 @@ export default function TrainingPath() {
     void load();
   }, [user, profile]);
 
+  const nodes = useMemo(() => (data ? buildNodes(data) : []), [data]);
+
   if (loading) {
     return (
-      <div data-theme="learning" className="min-h-screen bg-surface-primary flex items-center justify-center">
-        <p className="text-content-muted">Loading training path...</p>
+      <div className="map-screen map-theme-adult min-h-screen flex items-center justify-center">
+        <p className="text-slate-400 text-sm">Loading the Reader&apos;s Journey...</p>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div data-theme="learning" className="min-h-screen bg-surface-primary flex flex-col items-center justify-center gap-4 p-6">
-        <p className="text-red-500">{error ?? 'Something went wrong'}</p>
-        <Link href="/" className="text-content-muted hover:text-brand text-sm">← Back home</Link>
+      <div className="map-screen map-theme-adult min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <p className="text-red-400">{error ?? 'Something went wrong'}</p>
+        <Link href="/" className="text-slate-400 hover:text-white text-sm">
+          ← Back home
+        </Link>
       </div>
     );
   }
 
-  const xpInCurrentLevel = data.profile.total_xp % READER_LEVEL_XP_STEP;
+  const stats: MapStatToken[] = [
+    { id: 'xp', icon: '✦', value: data.profile.total_xp.toLocaleString(), label: 'Total XP' },
+    { id: 'streak', icon: '🔥', value: String(data.profile.current_streak), label: 'Day streak' },
+    { id: 'level', icon: '📖', value: `Lv ${data.profile.reader_level}`, label: 'Reader level' },
+  ];
 
   return (
-    <div data-theme="learning" className="min-h-screen bg-surface-primary text-content-primary">
-      <div className="max-w-lg mx-auto px-6 py-8 md:py-12">
-        <Link href="/" className="text-sm text-content-muted hover:text-brand mb-8 inline-block transition-colors">
-          ← Back
-        </Link>
-
-        <header className="mb-10">
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-2">
-            Become a better reader
-          </h1>
-          <p className="text-content-secondary text-sm md:text-base leading-relaxed">
-            Short reading reps with quick comprehension checks. Build speed honestly.
-          </p>
-        </header>
-
-        {data.profile.is_logged_in ? (
-          <div className="mb-10 p-5 surface-card space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <LevelBadge level={data.profile.reader_level} />
-              {data.profile.current_streak > 0 && (
-                <StreakBadge days={data.profile.current_streak} />
-              )}
-            </div>
-            <XPBar
-              current={xpInCurrentLevel}
-              max={READER_LEVEL_XP_STEP}
-              label="Progress to next level"
-            />
-            <p className="text-xs text-content-muted tabular-nums">
-              {data.profile.total_xp.toLocaleString()} total XP earned
-            </p>
-          </div>
-        ) : (
-          <div className="mb-10 p-4 surface-card border-warning/30 bg-warning-light/30 text-sm text-amber-800">
-            Preview Level 1 free. Sign up to save XP and unlock all Bronze levels.
-          </div>
-        )}
-
-        {data.tiers.map((tier, tierIndex) => (
-          <section key={tier.id} className={tierIndex > 0 ? 'mt-section-lg' : ''}>
-            <h2 className="text-lg font-bold tracking-tight mb-1">{tier.title}</h2>
-            <p className="text-content-muted text-sm mb-5">{tier.description}</p>
-            <div className="space-y-4">
-              {tier.levels.map((level) => (
-                <TrainingLevelCard key={level.id} level={level} tierId={tier.id} />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-    </div>
+    <MapProgressScreen
+      config={config}
+      nodes={nodes}
+      stats={stats}
+      backHref="/"
+      guestNote={
+        data.profile.is_logged_in
+          ? null
+          : 'Preview Level 1 free. Sign up to save XP and unlock all Bronze levels.'
+      }
+    />
   );
 }
