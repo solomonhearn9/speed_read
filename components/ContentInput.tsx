@@ -396,7 +396,7 @@ export default function ContentInput() {
 
       <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 sm:pb-12">
         <section className="max-w-3xl mx-auto pt-6 sm:pt-8 md:pt-10 text-center">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-3 sm:mb-4 leading-tight tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-3 sm:mb-4 leading-tight tracking-tight">
             How <span className="challenge-hero-accent">fast</span> can you read?
           </h1>
           <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto">

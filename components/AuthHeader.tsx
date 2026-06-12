@@ -95,11 +95,11 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <Link href="/" className="shrink-0" onClick={closeMobileNav}>
             <Image
-              src="/logo.png"
-              alt="SpeedRead.cc"
-              width={1254}
-              height={1254}
-              className="h-10 w-auto sm:h-12 md:h-14 lg:h-16"
+              src="/Group 1 1.png"
+              alt="SpeedRead"
+              width={906}
+              height={247}
+              className="h-8 w-auto sm:h-10 md:h-11 lg:h-12"
               priority
             />
           </Link>
