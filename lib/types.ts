@@ -20,6 +20,11 @@ export interface Profile {
   first_utm_content?: string | null;
   first_referrer?: string | null;
   first_landing_path?: string | null;
+  total_xp?: number;
+  reader_level?: number;
+  current_streak?: number;
+  longest_streak?: number;
+  last_training_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,4 +79,31 @@ export type AnalyticsEventName =
   | 'referral_link_copied'
   | 'viral_test_started'
   | 'viral_test_completed'
-  | 'viral_test_shared';
+  | 'viral_test_shared'
+  | 'training_path_viewed'
+  | 'training_level_viewed'
+  | 'training_level_started'
+  | 'training_level_completed'
+  | 'quiz_started'
+  | 'quiz_question_answered'
+  | 'quiz_completed'
+  | 'xp_awarded'
+  | 'reader_level_up'
+  | 'tier_unlocked'
+  | 'personal_best_set'
+  | 'retry_level_clicked'
+  | 'continue_with_low_score_clicked'
+  | 'adventures_home_viewed'
+  | 'adventure_story_viewed'
+  | 'adventure_chapter_viewed'
+  | 'adventure_chapter_started'
+  | 'adventure_chapter_completed'
+  | 'adventure_quiz_started'
+  | 'adventure_quiz_question_answered'
+  | 'adventure_quiz_completed'
+  | 'adventure_xp_awarded'
+  | 'adventure_next_chapter_clicked'
+  | 'adventure_retry_clicked'
+  | 'adventure_signup_prompt_viewed'
+  | 'adventure_signup_clicked'
+  | 'adventure_story_completed';

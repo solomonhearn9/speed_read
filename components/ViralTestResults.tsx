@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useReadingStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
@@ -69,30 +70,47 @@ export default function ViralTestResults() {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/95 p-6">
-        <div className="min-h-full flex items-center justify-center">
+      <div
+        data-theme="challenge"
+        className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end p-6"
+      >
+        <div className="absolute inset-0 challenge-glow pointer-events-none" aria-hidden="true" />
+        <div className="relative min-h-full flex items-center justify-center">
           <div className="w-full max-w-md text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">How far could you follow?</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-6 tracking-tight text-white">
+              How far could you follow?
+            </h2>
 
-            <div className="space-y-3 text-gray-400 text-sm md:text-base mb-8">
+            <div className="space-y-3 challenge-text-muted text-sm md:text-base mb-8">
               <p>This challenge increased from 300 → 900 WPM.</p>
               <p>Most readers comfortably follow between 400–600 WPM.</p>
             </div>
 
-            <p className="text-white text-base md:text-lg mb-6">👇 Now try it with your own content.</p>
+            <Link
+              href="/train"
+              onClick={() => trackEvent('training_path_viewed', { source: 'challenge_complete' })}
+              className="block w-full px-6 py-4 mb-3 btn-challenge text-base md:text-lg"
+            >
+              Continue Learning
+            </Link>
+            <p className="challenge-text-muted text-xs mb-4">Short reading reps with comprehension checks</p>
+
+            <Link
+              href="/adventures"
+              onClick={() => trackEvent('adventures_home_viewed', { source: 'challenge_complete' })}
+              className="block w-full px-6 py-3 mb-6 challenge-btn-secondary text-base"
+            >
+              Try a Story Adventure
+            </Link>
+
+            <p className="text-white text-base md:text-lg mb-6">👇 Or try it with your own content.</p>
 
             <div className="space-y-3 mb-8">
-              <button
-                onClick={handlePasteText}
-                className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
-              >
+              <button onClick={handlePasteText} className="w-full px-6 py-3 challenge-btn-secondary">
                 Paste Text
               </button>
 
-              <button
-                onClick={handleUploadPdf}
-                className="w-full px-6 py-3 bg-gray-900 border border-gray-700 hover:border-gray-600 text-white font-medium rounded-lg transition-colors"
-              >
+              <button onClick={handleUploadPdf} className="w-full px-6 py-3 challenge-btn-secondary">
                 Upload PDF
               </button>
             </div>
@@ -100,20 +118,20 @@ export default function ViralTestResults() {
             {!usage.isUnlimited && (
               <>
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="flex-1 h-px bg-gray-800" />
+                  <div className="challenge-divider" />
                 </div>
 
-                <div className="p-5 bg-gray-900 rounded-lg border border-red-500/30 text-left">
-                  <p className="text-xs uppercase tracking-widest text-gray-500 mb-3 text-center">Launch Offer</p>
-                  <h3 className="text-lg font-semibold text-white text-center mb-1">Unlimited Reading</h3>
-                  <p className="text-gray-400 text-sm text-center mb-4">Lifetime Access</p>
-                  <p className="text-2xl font-bold text-white text-center mb-4">
-                    $29 <span className="text-sm font-normal text-gray-400">one-time</span>
+                <div className="p-5 challenge-surface-solid border border-challenge-cta/30 text-left">
+                  <p className="text-xs uppercase tracking-widest challenge-text-muted mb-3 text-center">Launch Offer</p>
+                  <h3 className="text-lg font-bold text-white text-center mb-1">Unlimited Reading</h3>
+                  <p className="challenge-text-muted text-sm text-center mb-4">Lifetime Access</p>
+                  <p className="text-2xl font-extrabold text-white text-center mb-4">
+                    $29 <span className="text-sm font-normal challenge-text-muted">one-time</span>
                   </p>
                   <button
                     onClick={handleUnlockLifetime}
                     disabled={checkoutLoading}
-                    className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+                    className="w-full px-6 py-3 btn-challenge disabled:opacity-50 font-medium"
                   >
                     {checkoutLoading ? 'Redirecting...' : 'Unlock Lifetime'}
                   </button>
@@ -131,6 +149,7 @@ export default function ViralTestResults() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode="signup"
+        theme="challenge"
       />
     </>
   );

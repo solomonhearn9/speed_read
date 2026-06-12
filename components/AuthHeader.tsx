@@ -10,10 +10,15 @@ import {
   isPaidProfile,
 } from '@/lib/plans';
 import { canAccessBillingPortal } from '@/lib/stripe-profile-sync';
+import type { ModalTheme } from './Modal';
 import AuthModal from './AuthModal';
 import UpgradeModal from './UpgradeModal';
 
-export default function AuthHeader() {
+interface AuthHeaderProps {
+  theme?: ModalTheme;
+}
+
+export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
   const { user, profile, signOut } = useAuth();
   const [authModal, setAuthModal] = useState<'login' | 'signup' | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -24,6 +29,7 @@ export default function AuthHeader() {
   const showManageBilling = canAccessBillingPortal(profile);
   const cancelMessage = getCancelAtPeriodEndMessage(profile);
   const planLabel = getAccountPlanLabel(profile);
+  const isChallenge = theme === 'challenge';
 
   const handleManageBilling = async () => {
     setPortalLoading(true);
@@ -42,6 +48,18 @@ export default function AuthHeader() {
     }
   };
 
+  const menuBtnClass = isChallenge
+    ? 'text-sm text-slate-200 hover:text-white challenge-surface rounded-lg px-3 py-1.5 transition-colors max-w-[200px] truncate'
+    : 'text-sm text-content-secondary hover:text-content-primary surface-card rounded-lg px-3 py-1.5 transition-colors max-w-[200px] truncate';
+
+  const signupBtnClass = isChallenge
+    ? 'text-sm challenge-surface hover:border-brand-cyan/30 text-white rounded-lg px-3 py-1.5 transition-colors border border-transparent'
+    : 'text-sm btn-brand rounded-lg px-3 py-1.5';
+
+  const loginBtnClass = isChallenge
+    ? 'text-sm text-slate-300 hover:text-brand-cyan transition-colors'
+    : 'text-sm text-content-secondary hover:text-brand transition-colors';
+
   return (
     <>
       <header className="absolute top-0 right-0 left-0 z-10 flex items-center justify-between gap-3 p-4 md:p-6">
@@ -59,17 +77,19 @@ export default function AuthHeader() {
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="text-sm text-gray-300 hover:text-white bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 transition-colors max-w-[200px] truncate"
+              className={menuBtnClass}
             >
               {user.email}
             </button>
             {showMenu && (
               <>
                 <div className="fixed inset-0" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-800 rounded-lg shadow-xl py-1 z-20">
-                  <div className="px-4 py-2 border-b border-gray-800">
-                    <p className="text-xs text-gray-500">Current plan</p>
-                    <p className="text-sm text-white font-medium">{planLabel}</p>
+                <div className={`absolute right-0 mt-2 w-56 rounded-lg shadow-elevated py-1 z-20 ${
+                  isChallenge ? 'challenge-surface-solid' : 'surface-card'
+                }`}>
+                  <div className={`px-4 py-2 border-b ${isChallenge ? 'border-white/10' : 'border-line'}`}>
+                    <p className={`text-xs ${isChallenge ? 'challenge-text-muted' : 'text-content-muted'}`}>Current plan</p>
+                    <p className={`text-sm font-medium ${isChallenge ? 'text-white' : 'text-content-primary'}`}>{planLabel}</p>
                     {cancelMessage && (
                       <p className="text-xs text-amber-400/90 mt-1 leading-snug">{cancelMessage}</p>
                     )}
@@ -79,7 +99,11 @@ export default function AuthHeader() {
                     <button
                       onClick={handleManageBilling}
                       disabled={portalLoading}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white disabled:opacity-50"
+                      className={`w-full text-left px-4 py-2 text-sm disabled:opacity-50 ${
+                        isChallenge
+                          ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          : 'text-content-secondary hover:bg-surface-secondary hover:text-content-primary'
+                      }`}
                     >
                       {portalLoading ? 'Opening...' : 'Manage Billing'}
                     </button>
@@ -91,7 +115,11 @@ export default function AuthHeader() {
                         setShowMenu(false);
                         setShowUpgrade(true);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                      className={`w-full text-left px-4 py-2 text-sm ${
+                        isChallenge
+                          ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          : 'text-content-secondary hover:bg-surface-secondary hover:text-content-primary'
+                      }`}
                     >
                       Upgrade
                     </button>
@@ -103,7 +131,11 @@ export default function AuthHeader() {
                       trackEvent('logout');
                       signOut();
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                    className={`w-full text-left px-4 py-2 text-sm ${
+                      isChallenge
+                        ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                        : 'text-content-secondary hover:bg-surface-secondary hover:text-content-primary'
+                    }`}
                   >
                     Log out
                   </button>
@@ -118,7 +150,7 @@ export default function AuthHeader() {
                 trackEvent('login_clicked');
                 setAuthModal('login');
               }}
-              className="text-sm text-gray-300 hover:text-white transition-colors"
+              className={loginBtnClass}
             >
               Log in
             </button>
@@ -127,7 +159,7 @@ export default function AuthHeader() {
                 trackEvent('signup_clicked');
                 setAuthModal('signup');
               }}
-              className="text-sm bg-gray-900 border border-gray-700 hover:border-gray-600 text-white rounded-lg px-3 py-1.5 transition-colors"
+              className={signupBtnClass}
             >
               Sign up
             </button>
@@ -140,11 +172,13 @@ export default function AuthHeader() {
         isOpen={authModal !== null}
         onClose={() => setAuthModal(null)}
         initialMode={authModal ?? 'login'}
+        theme={theme}
       />
 
       <UpgradeModal
         isOpen={showUpgrade}
         onClose={() => setShowUpgrade(false)}
+        theme={theme}
         onRequireAuth={() => {
           setShowUpgrade(false);
           setAuthModal('login');

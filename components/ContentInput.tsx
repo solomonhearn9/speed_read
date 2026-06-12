@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useReadingStore } from '@/lib/store';
 import { parseFile, scrapeURL } from '@/lib/contentParsers';
 import { useAuth } from '@/lib/auth-context';
@@ -378,6 +379,7 @@ export default function ContentInput() {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
           reason={upgradeReason}
+          theme="challenge"
           onRequireAuth={() => {
             setShowUpgradeModal(false);
             setShowAuthModal(true);
@@ -388,25 +390,17 @@ export default function ContentInput() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <AuthHeader />
+    <div data-theme="challenge" className="min-h-screen bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end text-slate-100 p-8 relative overflow-hidden">
+      <div className="absolute inset-0 challenge-glow pointer-events-none" aria-hidden="true" />
+      <AuthHeader theme="challenge" />
 
       <div className="max-w-3xl mx-auto px-4 md:px-0 pt-12">
-        <div className="relative mb-8 py-6">
-          <div
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden="true"
-            style={{
-              background:
-                'radial-gradient(ellipse 75% 55% at 50% 45%, rgba(239, 68, 68, 0.07) 0%, transparent 70%)',
-            }}
-          />
-
+        <div className="relative mb-10 py-8">
           <div className="relative text-center">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight px-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-4 leading-tight px-1 tracking-tight">
               How fast can you read?
             </h1>
-            <p className="text-gray-400 text-sm md:text-lg px-1">
+            <p className="text-slate-400 text-sm md:text-lg px-1">
               Take the 30-second reading challenge and discover your WPM score.
             </p>
           </div>
@@ -414,40 +408,58 @@ export default function ContentInput() {
           <div className="relative mt-8">
             <button
               onClick={handleViralTest}
-              className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-base md:text-lg"
+              className="w-full px-6 py-4 btn-challenge text-base md:text-lg"
             >
               Start the 30-Second Challenge
             </button>
-            <p className="mt-3 text-center text-[10px] sm:text-xs text-gray-500">
+            <p className="mt-3 text-center text-[10px] sm:text-xs challenge-text-muted">
               Average reader ≈ 200 WPM
             </p>
-            <p className="mt-1.5 text-center text-[10px] sm:text-xs text-gray-500 leading-relaxed px-1">
+            <p className="mt-1.5 text-center text-[10px] sm:text-xs challenge-text-muted leading-relaxed px-1">
               <span className="inline-flex flex-wrap justify-center gap-x-2 gap-y-1.5 max-w-full">
                 <span>🟢 300 WPM</span>
-                <span className="text-gray-600 hidden sm:inline" aria-hidden="true">•</span>
+                <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
                 <span>🟡 500 WPM</span>
-                <span className="text-gray-600 hidden sm:inline" aria-hidden="true">•</span>
+                <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
                 <span>🔴 700 WPM</span>
-                <span className="text-gray-600 hidden sm:inline" aria-hidden="true">•</span>
+                <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
                 <span>⚫ 900+ WPM</span>
               </span>
             </p>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
+              <Link
+                href="/train"
+                onClick={() => trackEvent('training_path_viewed', { source: 'landing' })}
+                className="text-center text-sm challenge-text-muted hover:text-brand-cyan transition-colors"
+              >
+                Continue Learning →
+              </Link>
+              <span className="hidden sm:inline text-slate-600" aria-hidden="true">·</span>
+              <Link
+                href="/adventures"
+                onClick={() => trackEvent('adventures_home_viewed', { source: 'landing' })}
+                className="text-center text-sm challenge-text-muted hover:text-emerald-400 transition-colors"
+              >
+                Reading Adventures
+                <span className="block text-[10px] text-slate-500">Read stories. Earn XP.</span>
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 h-px bg-gray-800" />
-          <span className="text-xs text-gray-500 whitespace-nowrap">or paste your own text</span>
-          <div className="flex-1 h-px bg-gray-800" />
+        <div className="flex items-center gap-4 mb-8">
+          <div className="challenge-divider" />
+          <span className="text-xs challenge-text-muted whitespace-nowrap">or paste your own text</span>
+          <div className="challenge-divider" />
         </div>
 
-        <div className="flex gap-2 mb-6 border-b border-gray-800">
+        <div className="flex gap-2 mb-6 border-b border-white/10">
           <button
             onClick={() => handleTabSwitch('text')}
             className={`px-4 py-2 font-medium transition-colors ${
               inputMethod === 'text'
-                ? 'text-white border-b-2 border-red-500'
-                : 'text-gray-400 hover:text-white'
+                ? 'text-white border-b-2 border-challenge-cta'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Paste Text
@@ -456,8 +468,8 @@ export default function ContentInput() {
             onClick={() => handleTabSwitch('file')}
             className={`px-4 py-2 font-medium transition-colors ${
               inputMethod === 'file'
-                ? 'text-white border-b-2 border-red-500'
-                : 'text-gray-400 hover:text-white'
+                ? 'text-white border-b-2 border-challenge-cta'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Upload File
@@ -466,8 +478,8 @@ export default function ContentInput() {
             onClick={() => handleTabSwitch('url')}
             className={`px-4 py-2 font-medium transition-colors ${
               inputMethod === 'url'
-                ? 'text-white border-b-2 border-red-500'
-                : 'text-gray-400 hover:text-white'
+                ? 'text-white border-b-2 border-challenge-cta'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             URL Scrape
@@ -509,13 +521,13 @@ export default function ContentInput() {
                 onChange={handleTextareaChange}
                 onKeyDown={handleTextareaKeyDown}
                 placeholder="Paste your text here..."
-                className="w-full h-64 bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none select-text text-sm md:text-base"
+                className="w-full h-64 challenge-input resize-none select-text"
                 style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
               />
               {textInput && (
                 <button
                   onClick={handleClearText}
-                  className="absolute top-2 right-2 px-3 py-1 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                  className="absolute top-2 right-2 px-3 py-1 text-sm challenge-btn-secondary"
                   title="Clear text"
                 >
                   Clear
@@ -523,7 +535,7 @@ export default function ContentInput() {
               )}
             </div>
             {!usage.isUnlimited && (
-              <p className="mt-2 text-xs text-gray-500 text-center">
+              <p className="mt-2 text-xs challenge-text-muted text-center">
                 {usage.tier === 'anonymous'
                   ? 'Free: paste up to 500 words. Upgrade for unlimited reading, uploads, and URL scraping.'
                   : 'Free: paste up to 1,500 words. Upgrade for unlimited reading, uploads, and URL scraping.'}
@@ -532,7 +544,7 @@ export default function ContentInput() {
             <button
               onClick={handleTextSubmit}
               disabled={!textInput.trim()}
-              className="mt-4 w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="mt-4 w-full px-6 py-3 btn-challenge disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
             >
               Start Reading
             </button>
@@ -541,7 +553,7 @@ export default function ContentInput() {
 
         {inputMethod === 'file' && (
           <div>
-            <div className="border-2 border-dashed border-gray-800 rounded-lg p-12 text-center hover:border-gray-700 transition-colors">
+            <div className="border-2 border-dashed border-white/10 rounded-xl p-12 text-center hover:border-brand-cyan/30 transition-colors challenge-surface">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -563,7 +575,7 @@ export default function ContentInput() {
                 }}
               >
                 <svg
-                  className="w-16 h-16 text-gray-600 mb-4"
+                  className="w-16 h-16 text-slate-500 mb-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -578,7 +590,7 @@ export default function ContentInput() {
                 <span className="text-lg font-medium mb-2">
                   {isLoading ? 'Processing...' : 'Click to upload or drag and drop'}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm challenge-text-muted">
                   Supports PDF, DOCX, DOC, TXT files — Pro feature
                 </span>
               </label>
@@ -593,21 +605,21 @@ export default function ContentInput() {
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               placeholder="https://example.com/article"
-              className="w-full bg-gray-900 border border-gray-800 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 mb-4 text-sm md:text-base"
+              className="challenge-input mb-4"
             />
             <button
               onClick={handleURLSubmit}
               disabled={!urlInput.trim() || isLoading}
-              className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="w-full px-6 py-3 btn-challenge disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
             >
               {isLoading ? 'Scraping...' : 'Scrape and Read'}
             </button>
           </div>
         )}
 
-        <div className="mt-12 p-6 bg-gray-900 rounded-lg border border-gray-800">
-          <h2 className="text-xl font-semibold mb-4">How it works</h2>
-          <ul className="space-y-2 text-gray-400">
+        <div className="mt-12 p-6 challenge-surface">
+          <h2 className="text-xl font-bold mb-4">How it works</h2>
+          <ul className="space-y-2.5 challenge-text-muted">
             <li>• Words appear one at a time in the center of the screen</li>
             <li>• The red anchor character helps your eyes focus</li>
             <li>• Adjust speed with the slider (100-1000 WPM)</li>
@@ -622,12 +634,14 @@ export default function ContentInput() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode="signup"
+        theme="challenge"
       />
 
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
+        theme="challenge"
         onRequireAuth={() => {
           setShowUpgradeModal(false);
           setShowAuthModal(true);

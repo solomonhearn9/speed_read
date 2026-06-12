@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Modal from './Modal';
+import Modal, { type ModalTheme } from './Modal';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent, persistSignupAttribution } from '@/lib/analytics';
 import { RATE_LIMIT_MESSAGE } from '@/lib/auth-utils';
@@ -18,9 +18,43 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode?: 'login' | 'signup';
   onSuccess?: () => void;
+  theme?: ModalTheme;
 }
 
-export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }: AuthModalProps) {
+function authStyles(theme: ModalTheme) {
+  const learning = theme === 'learning';
+  return {
+    modalTheme: theme,
+    body: learning ? 'text-content-secondary text-sm' : 'text-slate-300 text-sm',
+    sub: learning ? 'text-content-muted text-xs' : 'text-slate-500 text-xs',
+    hint: learning ? 'text-content-muted text-sm' : 'challenge-text-muted text-sm',
+    intro: learning ? 'text-content-muted text-sm mb-4' : 'challenge-text-muted text-sm mb-4',
+    input: learning
+      ? 'w-full bg-surface-secondary border border-line rounded-lg p-3 text-content-primary placeholder:text-content-disabled focus:outline-none focus:border-brand disabled:opacity-50'
+      : 'challenge-input disabled:opacity-50',
+    primary: learning
+      ? 'w-full px-6 py-3 btn-brand rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
+      : 'w-full px-6 py-3 btn-challenge disabled:opacity-50 disabled:cursor-not-allowed font-medium',
+    secondary: learning
+      ? 'w-full px-4 py-2 text-sm text-content-secondary hover:text-content-primary border border-line hover:border-brand/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+      : 'w-full px-4 py-2 text-sm challenge-btn-secondary disabled:opacity-50 disabled:cursor-not-allowed',
+    ghost: learning
+      ? 'w-full px-4 py-2 text-sm text-content-muted hover:text-content-primary disabled:opacity-50 transition-colors'
+      : 'w-full px-4 py-2 text-sm challenge-text-muted hover:text-white disabled:opacity-50 transition-colors',
+    link: learning
+      ? 'text-brand hover:text-brand-hover disabled:opacity-50'
+      : 'text-brand-cyan hover:text-white disabled:opacity-50',
+    footer: learning ? 'text-content-muted' : 'challenge-text-muted',
+  };
+}
+
+export default function AuthModal({
+  isOpen,
+  onClose,
+  initialMode = 'login',
+  onSuccess,
+  theme = 'challenge',
+}: AuthModalProps) {
   const { signIn, signUp, resendVerificationEmail } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [viewState, setViewState] = useState<AuthViewState>('form');
@@ -28,6 +62,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const s = authStyles(theme);
 
   useEffect(() => {
     if (isOpen) {
@@ -126,33 +161,19 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
   if (viewState === 'verification_email_sent') {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} title="Check your email">
+      <Modal isOpen={isOpen} onClose={onClose} title="Check your email" theme={s.modalTheme}>
         <div className="space-y-4">
-          <p className="text-gray-300 text-sm">
-            Check your email to verify your account.
+          <p className={s.body}>Check your email to verify your account.</p>
+          <p className={s.body}>We sent a verification link to your inbox.</p>
+          <p className={s.sub}>
+            Sent to <span className={theme === 'learning' ? 'text-content-primary' : 'text-slate-200'}>{email}</span>
           </p>
-          <p className="text-gray-300 text-sm">
-            We sent a verification link to your inbox.
-          </p>
-          <p className="text-gray-500 text-xs">
-            Sent to <span className="text-gray-300">{email}</span>
-          </p>
-          <p className="text-gray-400 text-sm">
-            After verifying, return here and log in.
-          </p>
-          <button
-            onClick={handleResend}
-            disabled={isPending}
-            className="w-full px-4 py-2 text-sm text-gray-300 hover:text-white border border-gray-700 hover:border-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <p className={s.hint}>After verifying, return here and log in.</p>
+          <button onClick={handleResend} disabled={isPending} className={s.secondary}>
             {isPending ? 'Sending...' : 'Resend verification email'}
           </button>
           {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            onClick={switchToLogin}
-            disabled={isPending}
-            className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
-          >
+          <button onClick={switchToLogin} disabled={isPending} className={s.primary}>
             Go to log in
           </button>
         </div>
@@ -162,30 +183,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
   if (viewState === 'verification_resent') {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} title="Verification email resent">
+      <Modal isOpen={isOpen} onClose={onClose} title="Verification email resent" theme={s.modalTheme}>
         <div className="space-y-4">
-          <p className="text-gray-300 text-sm">
-            We sent a verification link to your inbox.
+          <p className={s.body}>We sent a verification link to your inbox.</p>
+          <p className={s.sub}>
+            Sent to <span className={theme === 'learning' ? 'text-content-primary' : 'text-slate-200'}>{email}</span>
           </p>
-          <p className="text-gray-500 text-xs">
-            Sent to <span className="text-gray-300">{email}</span>
-          </p>
-          <p className="text-gray-400 text-sm">
-            After verifying, return here and log in.
-          </p>
-          <button
-            onClick={handleResend}
-            disabled={isPending}
-            className="w-full px-4 py-2 text-sm text-gray-300 hover:text-white border border-gray-700 hover:border-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <p className={s.hint}>After verifying, return here and log in.</p>
+          <button onClick={handleResend} disabled={isPending} className={s.secondary}>
             {isPending ? 'Sending...' : 'Resend again'}
           </button>
           {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            onClick={switchToLogin}
-            disabled={isPending}
-            className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
-          >
+          <button onClick={switchToLogin} disabled={isPending} className={s.primary}>
             Go to log in
           </button>
         </div>
@@ -195,35 +204,24 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
   if (viewState === 'unverified_login') {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} title="Email verification required">
+      <Modal isOpen={isOpen} onClose={onClose} title="Email verification required" theme={s.modalTheme}>
         <div className="space-y-4">
-          <p className="text-gray-300 text-sm">
-            Please verify your email before logging in.
-          </p>
-          <p className="text-gray-400 text-sm">
-            Check your inbox for the verification link, or resend it below.
-          </p>
+          <p className={s.body}>Please verify your email before logging in.</p>
+          <p className={s.hint}>Check your inbox for the verification link, or resend it below.</p>
           {email && (
-            <p className="text-gray-500 text-xs">
-              Account: <span className="text-gray-300">{email}</span>
+            <p className={s.sub}>
+              Account: <span className={theme === 'learning' ? 'text-content-primary' : 'text-slate-200'}>{email}</span>
             </p>
           )}
           <button
             onClick={handleResend}
             disabled={isPending || !email.trim()}
-            className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            className={s.primary}
           >
             {isPending ? 'Sending...' : 'Resend verification email'}
           </button>
           {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            onClick={() => {
-              setViewState('form');
-              setError(null);
-            }}
-            disabled={isPending}
-            className="w-full px-4 py-2 text-sm text-gray-400 hover:text-white disabled:opacity-50 transition-colors"
-          >
+          <button onClick={() => { setViewState('form'); setError(null); }} disabled={isPending} className={s.ghost}>
             Back to log in
           </button>
         </div>
@@ -233,15 +231,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
   if (viewState === 'rate_limit') {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} title="Too many requests">
+      <Modal isOpen={isOpen} onClose={onClose} title="Too many requests" theme={s.modalTheme}>
         <div className="space-y-4">
-          <p className="text-gray-300 text-sm">{RATE_LIMIT_MESSAGE}</p>
+          <p className={s.body}>{RATE_LIMIT_MESSAGE}</p>
           <button
-            onClick={() => {
-              setViewState('form');
-              setError(null);
-            }}
-            className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+            onClick={() => { setViewState('form'); setError(null); }}
+            className={s.primary}
           >
             Back
           </button>
@@ -255,8 +250,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       isOpen={isOpen}
       onClose={onClose}
       title={mode === 'login' ? 'Log in' : 'Sign up free'}
+      theme={s.modalTheme}
     >
-      <p className="text-gray-400 text-sm mb-4">
+      <p className={s.intro}>
         {mode === 'login'
           ? 'Welcome back! Log in to sync your reading progress.'
           : 'Sign up free to unlock 1,500 words/session and 5 daily sessions.'}
@@ -270,7 +266,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           placeholder="Email"
           required
           disabled={isPending}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 disabled:opacity-50"
+          className={s.input}
         />
         <input
           type="password"
@@ -280,33 +276,24 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           required
           minLength={6}
           disabled={isPending}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 disabled:opacity-50"
+          className={s.input}
         />
 
-        {error && (
-          <p className="text-red-400 text-sm">{error}</p>
-        )}
+        {error && <p className="text-red-400 text-sm">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-        >
+        <button type="submit" disabled={isPending} className={s.primary}>
           {isPending ? 'Please wait...' : mode === 'login' ? 'Log in' : 'Create account'}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-400">
+      <p className={`mt-4 text-center text-sm ${s.footer}`}>
         {mode === 'login' ? (
           <>
             No account?{' '}
             <button
-              onClick={() => {
-                setMode('signup');
-                setError(null);
-              }}
+              onClick={() => { setMode('signup'); setError(null); }}
               disabled={isPending}
-              className="text-red-400 hover:text-red-300 disabled:opacity-50"
+              className={s.link}
             >
               Sign up free
             </button>
@@ -314,11 +301,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
         ) : (
           <>
             Already have an account?{' '}
-            <button
-              onClick={switchToLogin}
-              disabled={isPending}
-              className="text-red-400 hover:text-red-300 disabled:opacity-50"
-            >
+            <button onClick={switchToLogin} disabled={isPending} className={s.link}>
               Log in
             </button>
           </>

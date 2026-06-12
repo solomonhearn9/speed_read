@@ -260,7 +260,7 @@ export default function ReadingView() {
 
   if (processedWords.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-gray-400">
+      <div data-theme="challenge" className="flex items-center justify-center min-h-screen bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end challenge-text-muted">
         <p>No content loaded. Please add text to begin reading.</p>
       </div>
     );
@@ -271,12 +271,39 @@ export default function ReadingView() {
     return null;
   }
 
+  const isViral = sessionMode === 'viral_test';
+
   return (
-    <div className="relative">
-      {sessionMode === 'viral_test' && (
+    <div data-theme="challenge" className="relative min-h-screen">
+      {isViral && (
+        <>
+          <div
+            className="fixed top-0 left-0 right-0 z-20 challenge-panel px-4 py-3 flex items-center justify-between"
+            style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+          >
+            <button
+              onClick={() => reset()}
+              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-brand-cyan transition-colors"
+              aria-label="Back to home"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+            <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">30-Second Challenge</p>
+            <div className="w-12" aria-hidden="true" />
+          </div>
+          <div
+            className="fixed inset-0 pointer-events-none z-0 challenge-glow"
+            aria-hidden="true"
+          />
+        </>
+      )}
+      {!isViral && (
         <button
           onClick={() => reset()}
-          className="fixed top-4 left-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          className="fixed top-4 left-4 z-20 flex items-center gap-1.5 text-sm text-slate-400 hover:text-brand-cyan transition-colors"
           aria-label="Back to home"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -285,9 +312,12 @@ export default function ReadingView() {
           Back
         </button>
       )}
-      <WordDisplay word={currentWord} />
+      <WordDisplay
+        word={currentWord}
+        variant={isViral ? 'challenge' : 'default'}
+      />
       <ReadingControls
-        viralSecondsRemaining={sessionMode === 'viral_test' ? viralSecondsRemaining : undefined}
+        viralSecondsRemaining={isViral ? viralSecondsRemaining : undefined}
       />
     </div>
   );

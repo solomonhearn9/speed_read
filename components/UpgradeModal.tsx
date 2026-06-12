@@ -1,17 +1,27 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Modal from './Modal';
+import Modal, { type ModalTheme } from './Modal';
 import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 
-type UpgradeReason = 'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit' | 'challenge_limit';
+type UpgradeReason =
+  | 'pricing'
+  | 'upload'
+  | 'url'
+  | 'word_limit'
+  | 'session_limit'
+  | 'challenge_limit'
+  | 'training_limit'
+  | 'level_locked'
+  | 'advanced_training';
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   reason?: UpgradeReason;
   onRequireAuth?: () => void;
+  theme?: ModalTheme;
 }
 
 const REASON_COPY: Record<UpgradeReason, { title: string; body: string }> = {
@@ -39,6 +49,18 @@ const REASON_COPY: Record<UpgradeReason, { title: string; body: string }> = {
     title: 'Unlock unlimited challenges',
     body: 'You\'ve completed your 3 free 30-second challenges. Upgrade to keep playing and sharing your score.',
   },
+  training_limit: {
+    title: 'Unlock more training',
+    body: 'Upgrade for unlimited daily training sessions and advanced levels.',
+  },
+  level_locked: {
+    title: 'Unlock this level',
+    body: 'This training level requires a Pro plan. Upgrade to continue your reading journey.',
+  },
+  advanced_training: {
+    title: 'Unlock advanced training',
+    body: 'Access higher-speed levels and endurance modes with a Pro plan.',
+  },
 };
 
 export default function UpgradeModal({
@@ -46,6 +68,7 @@ export default function UpgradeModal({
   onClose,
   reason = 'pricing',
   onRequireAuth,
+  theme = 'challenge',
 }: UpgradeModalProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState<'monthly' | 'lifetime' | null>(null);
@@ -53,6 +76,7 @@ export default function UpgradeModal({
   const trackedOpenRef = useRef(false);
 
   const copy = REASON_COPY[reason];
+  const learning = theme === 'learning';
 
   useEffect(() => {
     if (isOpen && !trackedOpenRef.current) {
@@ -108,36 +132,52 @@ export default function UpgradeModal({
     }
   };
 
+  const planCard = (highlight?: boolean) =>
+    learning
+      ? `p-4 rounded-lg border ${highlight ? 'border-brand/30 bg-brand/5' : 'border-line bg-surface-secondary'}`
+      : `p-4 rounded-lg ${highlight ? 'challenge-surface-solid border border-challenge-cta/30' : 'challenge-surface-solid border border-transparent'}`;
+
+  const muted = learning ? 'text-content-muted' : 'challenge-text-muted';
+  const priceMuted = learning ? 'text-content-muted' : 'text-slate-400';
+  const titleColor = learning ? 'text-content-primary' : 'text-white';
+  const ctaBtn = learning
+    ? 'w-full px-4 py-2 btn-brand disabled:opacity-50 font-medium rounded-lg transition-colors text-sm'
+    : 'w-full px-4 py-2 btn-challenge disabled:opacity-50 font-medium text-sm';
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={copy.title}>
-      <p className="text-gray-400 text-sm mb-6">{copy.body}</p>
+    <Modal isOpen={isOpen} onClose={onClose} title={copy.title} theme={theme}>
+      <p className={`${muted} text-sm mb-6`}>{copy.body}</p>
 
       <div className="space-y-3 mb-4">
-        <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className={planCard()}>
           <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">Monthly</span>
-            <span className="text-lg font-bold text-white">$4.99<span className="text-sm text-gray-400">/mo</span></span>
+            <span className={`font-semibold ${titleColor}`}>Monthly</span>
+            <span className={`text-lg font-bold ${titleColor}`}>
+              $4.99<span className={`text-sm ${priceMuted}`}>/mo</span>
+            </span>
           </div>
-          <p className="text-xs text-gray-400 mb-3">Unlimited reading, uploads, and URL scraping</p>
+          <p className={`text-xs ${muted} mb-3`}>Unlimited reading, uploads, and URL scraping</p>
           <button
             onClick={() => handleCheckout('monthly')}
             disabled={loading !== null}
-            className="w-full px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors text-sm"
+            className={ctaBtn}
           >
             {loading === 'monthly' ? 'Redirecting...' : 'Start Monthly'}
           </button>
         </div>
 
-        <div className="p-4 bg-gray-800 rounded-lg border border-red-500/30">
+        <div className={planCard(true)}>
           <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">Lifetime</span>
-            <span className="text-lg font-bold text-white">$29<span className="text-sm text-gray-400"> once</span></span>
+            <span className={`font-semibold ${titleColor}`}>Lifetime</span>
+            <span className={`text-lg font-bold ${titleColor}`}>
+              $29<span className={`text-sm ${priceMuted}`}> once</span>
+            </span>
           </div>
-          <p className="text-xs text-gray-400 mb-3">Pay once, read forever — best value</p>
+          <p className={`text-xs ${muted} mb-3`}>Pay once, read forever — best value</p>
           <button
             onClick={() => handleCheckout('lifetime')}
             disabled={loading !== null}
-            className="w-full px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors text-sm"
+            className={ctaBtn}
           >
             {loading === 'lifetime' ? 'Redirecting...' : 'Get Lifetime Access'}
           </button>
@@ -148,7 +188,9 @@ export default function UpgradeModal({
 
       <button
         onClick={onClose}
-        className="w-full px-4 py-2 text-gray-400 hover:text-white text-sm transition-colors"
+        className={`w-full px-4 py-2 text-sm transition-colors ${
+          learning ? 'text-content-muted hover:text-content-primary' : 'challenge-text-muted hover:text-white'
+        }`}
       >
         Maybe later
       </button>

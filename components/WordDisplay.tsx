@@ -4,11 +4,36 @@ import { motion } from 'framer-motion';
 import { ProcessedWord } from '@/lib/textProcessor';
 import { useState, useEffect, useRef, useMemo } from 'react';
 
+export type WordDisplayVariant = 'challenge' | 'training' | 'default';
+
 interface WordDisplayProps {
   word: ProcessedWord;
+  showGuideLines?: boolean;
+  variant?: WordDisplayVariant;
 }
 
-export default function WordDisplay({ word }: WordDisplayProps) {
+const variantStyles = {
+  challenge: {
+    bg: 'bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end',
+    anchor: 'text-challenge-cta',
+    guideV: 'bg-slate-600',
+    guideH: 'bg-slate-700',
+  },
+  training: {
+    bg: 'bg-reader-bg',
+    anchor: 'text-reader-pivot',
+    guideV: 'bg-slate-600',
+    guideH: 'bg-reader-border',
+  },
+  default: {
+    bg: 'bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end',
+    anchor: 'text-challenge-cta',
+    guideV: 'bg-slate-600/80',
+    guideH: 'bg-slate-700/80',
+  },
+} as const;
+
+export default function WordDisplay({ word, showGuideLines = true, variant = 'default' }: WordDisplayProps) {
   const { text, orpIndex } = word;
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -58,16 +83,16 @@ export default function WordDisplay({ word }: WordDisplayProps) {
     return baseSize;
   }, [text.length, containerWidth]);
 
+  const styles = variantStyles[variant];
+
   return (
-    <div ref={containerRef} className="min-h-screen bg-black relative overflow-hidden">
-      {/* Guide lines - vertical line at center with horizontal lines */}
-      <div className="absolute inset-0 pointer-events-none z-10">
-        {/* Vertical center line (the focus point) */}
-        <div className="absolute left-1/2 top-0 w-px h-10 md:h-16 bg-gray-600 -translate-x-1/2" />
-        
-        {/* Top horizontal line */}
-        <div className="absolute top-10 md:top-16 left-0 right-0 h-px bg-gray-700" />
-      </div>
+    <div ref={containerRef} className={`min-h-screen ${styles.bg} relative overflow-hidden`}>
+      {showGuideLines && (
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <div className={`absolute left-1/2 top-0 w-px h-10 md:h-16 ${styles.guideV} -translate-x-1/2`} />
+          <div className={`absolute top-10 md:top-16 left-0 right-0 h-px ${styles.guideH}`} />
+        </div>
+      )}
 
       {/* Word display - anchor character ALWAYS at exact center using flexbox */}
       <motion.div
@@ -91,7 +116,7 @@ export default function WordDisplay({ word }: WordDisplayProps) {
         
         {/* Anchor character - this is the fixed center point */}
         <span 
-          className="font-serif select-none text-red-500 flex-shrink-0"
+          className={`font-serif select-none flex-shrink-0 ${styles.anchor}`}
           style={{ letterSpacing: '0.02em' }}
         >
           {anchorChar}

@@ -83,46 +83,43 @@ export default function PageView() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8">
+    <div data-theme="challenge" className="min-h-screen bg-gradient-to-b from-challenge-bg-start to-challenge-bg-end text-slate-100 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold">Full Text View</h1>
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">Full Text View</h1>
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('reading')}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+              className="px-4 py-2 btn-challenge font-medium"
             >
               Resume Reading
             </button>
             <button
               onClick={() => reset()}
-              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors"
+              className="px-4 py-2 challenge-btn-secondary"
             >
               New Content
             </button>
           </div>
         </div>
 
-        {/* Text content */}
         <div className="prose prose-invert max-w-none">
           <div className="text-sm md:text-lg leading-relaxed whitespace-pre-wrap">
             {renderText()}
           </div>
         </div>
 
-        {/* Current word indicator */}
         {currentIndex < processedWords.length && (
-          <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-800">
-            <p className="text-sm text-gray-400 mb-2">Current Position:</p>
+          <div className="mt-8 p-4 challenge-surface">
+            <p className="text-sm challenge-text-muted mb-2">Current Position:</p>
             <p className="text-lg">
               Word {currentIndex + 1} of {processedWords.length}: &quot;
-              <span className="text-yellow-300 font-semibold">
+              <span className="text-brand-cyan font-semibold">
                 {processedWords[currentIndex]?.text}
               </span>
               &quot;
             </p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm challenge-text-muted mt-2">
               Click any word to jump to that position
             </p>
           </div>
