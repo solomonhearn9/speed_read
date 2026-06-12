@@ -83,6 +83,24 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
 
   const closeMobileNav = () => setShowMobileNav(false);
 
+  const mobileMenuButton = isChallenge ? (
+    <button
+      type="button"
+      onClick={() => setShowMobileNav((open) => !open)}
+      className="lg:hidden inline-flex items-center justify-center rounded-lg p-2 text-white hover:text-brand-cyan transition-colors shrink-0"
+      aria-expanded={showMobileNav}
+      aria-label={showMobileNav ? 'Close menu' : 'Open menu'}
+    >
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        {showMobileNav ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        )}
+      </svg>
+    </button>
+  ) : null;
+
   return (
     <>
       <header
@@ -104,7 +122,7 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
             />
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 shrink-0">
             {isChallenge && (
               <nav className="hidden lg:flex items-center gap-5" aria-label="Main">
                 {CHALLENGE_NAV.map((item) => (
@@ -113,24 +131,6 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
                   </Link>
                 ))}
               </nav>
-            )}
-
-            {isChallenge && (
-              <button
-                type="button"
-                onClick={() => setShowMobileNav((open) => !open)}
-                className="lg:hidden inline-flex items-center justify-center rounded-lg p-2 text-white hover:text-brand-cyan transition-colors"
-                aria-expanded={showMobileNav}
-                aria-label={showMobileNav ? 'Close menu' : 'Open menu'}
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  {showMobileNav ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  )}
-                </svg>
-              </button>
             )}
 
             {user ? (
@@ -204,13 +204,13 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <>
                 <button
                   onClick={() => {
                     trackEvent('login_clicked');
                     setAuthModal('login');
                   }}
-                  className={loginBtnClass}
+                  className={`${loginBtnClass} hidden lg:inline-flex`}
                 >
                   Log in
                 </button>
@@ -223,8 +223,10 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
                 >
                   Sign up
                 </button>
-              </div>
+              </>
             )}
+
+            {mobileMenuButton}
           </div>
         </div>
 

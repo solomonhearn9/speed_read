@@ -88,6 +88,8 @@ export default function LandingFeatureCards() {
             </li>
           </ul>
 
+          <div className="min-h-6 sm:min-h-8 flex-1" aria-hidden="true" />
+
           <span className="landing-feature-card__cta landing-feature-card__cta--adult">
             Continue Learning
             <span aria-hidden="true">&gt;</span>
@@ -137,6 +139,8 @@ export default function LandingFeatureCards() {
               Fun for ages 8–14
             </li>
           </ul>
+
+          <div className="min-h-6 sm:min-h-8 flex-1" aria-hidden="true" />
 
           <span className="landing-feature-card__cta landing-feature-card__cta--kids">
             Start an Adventure

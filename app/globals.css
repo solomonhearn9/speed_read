@@ -344,7 +344,7 @@ body {
   }
 
   .landing-feature-card__cta {
-    @apply mt-auto inline-flex items-center justify-center gap-1.5 w-full font-semibold rounded-full py-3 text-sm md:text-base transition-opacity;
+    @apply inline-flex items-center justify-center gap-1.5 w-full font-semibold rounded-full py-3 text-sm md:text-base transition-opacity shrink-0;
   }
 
   .landing-feature-card__cta--adult {
