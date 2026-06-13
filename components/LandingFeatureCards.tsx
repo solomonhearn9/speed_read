@@ -48,7 +48,7 @@ export default function LandingFeatureCards() {
       <Link
         href="/train"
         onClick={() => trackEvent('training_path_viewed', { source: 'landing' })}
-        className="landing-feature-card landing-feature-card--adult group"
+        className="landing-feature-card landing-feature-card--adult group order-2 md:order-1"
       >
         <div className="landing-feature-card__bg">
           <Image src="/adult_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
@@ -100,7 +100,7 @@ export default function LandingFeatureCards() {
       <Link
         href="/adventures"
         onClick={() => trackEvent('adventures_home_viewed', { source: 'landing' })}
-        className="landing-feature-card landing-feature-card--kids group"
+        className="landing-feature-card landing-feature-card--kids group order-1 md:order-2"
       >
         <div className="landing-feature-card__bg">
           <Image src="/kids_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
