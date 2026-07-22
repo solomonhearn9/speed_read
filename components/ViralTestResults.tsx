@@ -12,7 +12,6 @@ import {
   type ChallengeIntentId,
 } from '@/lib/challengeIntent';
 import {
-  getViralTestBadgeLabel,
   getViralTestRevealHeadline,
   getViralTestRetryWpm,
   getViralTestShareMessage,
@@ -86,7 +85,6 @@ export default function ViralTestResults() {
     revealTier,
   } = viralTestResults;
 
-  const badgeLabel = getViralTestBadgeLabel(wpm, revealTier);
   const headline = getViralTestRevealHeadline(wpm, revealTier);
   const canShare = revealTier === 'verified' || revealTier === 'confirmed';
   const retryWpm = getViralTestRetryWpm(wpm);
@@ -94,7 +92,6 @@ export default function ViralTestResults() {
   const shareMessage = getViralTestShareMessage(wpm, percentile, {
     comprehensionPct,
     fullComprehension: revealTier === 'verified',
-    badgeLabel,
   });
   const shareUrl = buildShareUrl(wpm, comprehensionPct);
 
@@ -173,11 +170,6 @@ export default function ViralTestResults() {
               <p className="text-xs uppercase tracking-widest challenge-text-muted mb-3">
                 {revealTier === 'verified' ? 'Verified result' : 'Your score'}
               </p>
-              {badgeLabel && (
-                <p className="inline-flex items-center px-3 py-1 mb-4 text-xs font-bold uppercase tracking-wider text-challenge-cta border border-challenge-cta/40 bg-challenge-cta/10">
-                  {badgeLabel}
-                </p>
-              )}
               <h2 className="text-2xl md:text-3xl font-extrabold mb-2 tracking-tight text-white leading-snug">
                 {headline}
               </h2>

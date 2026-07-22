@@ -26,7 +26,7 @@ export function getViralTestWpmAtElapsedMs(elapsedMs: number): number {
 }
 
 export const VIRAL_TEST_TEXT = `${VIRAL_TEST_MARKER}
-Your brain can read faster than you think. This is a thirty second speed reading challenge. Focus on the red letter in each word and let your peripheral vision handle the rest.
+Your brain can read faster than you think. This is a thirty second speed reading challenge. Focus on the blue letter in each word and let your peripheral vision handle the rest.
 
 Most adults read about two hundred words per minute. Speed readers often double that by quieting the voice in their head and keeping their eyes still instead of jumping across the page.
 
@@ -112,11 +112,10 @@ export function formatViralTestResultSummary(
 export function getViralTestShareMessage(
   wpm: number,
   percentile: number,
-  options?: { comprehensionPct?: number; fullComprehension?: boolean; badgeLabel?: string | null }
+  options?: { comprehensionPct?: number; fullComprehension?: boolean }
 ): string {
   if (options?.fullComprehension) {
-    const badge = options.badgeLabel ? ` (${options.badgeLabel})` : '';
-    return `Confirmed: ${wpm} WPM, full comprehension${badge}. Faster than ${percentile}% of readers. Can you beat me?`;
+    return `Confirmed: ${wpm} WPM, full comprehension. Faster than ${percentile}% of readers. Can you beat me?`;
   }
   const compPart =
     options?.comprehensionPct != null ? ` · ${options.comprehensionPct}% comprehension` : '';
@@ -138,34 +137,34 @@ export const VIRAL_TEST_QUIZ_QUESTIONS: ViralTestQuizQuestion[] = [
     id: 'vt-q1',
     prompt: 'What reading method does this challenge use?',
     options: [
-      'Rapid Serial Visual Presentation (RSVP)',
       'Left-to-right page scanning',
       'Audio narration only',
+      'Rapid Serial Visual Presentation (RSVP)',
       'Highlight-and-skim',
     ],
-    correctIndex: 0,
+    correctIndex: 2,
   },
   {
     id: 'vt-q2',
     prompt: 'What should you focus on in each word during the challenge?',
     options: [
-      'The red letter (Optimal Recognition Point)',
       'The first letter only',
+      'The blue letter (Optimal Recognition Point)',
       'The last letter only',
       'The word length',
     ],
-    correctIndex: 0,
+    correctIndex: 1,
   },
   {
     id: 'vt-q3',
     prompt: 'According to the passage, what slows most people down when reading normally?',
     options: [
-      'Eye movements (saccades) between words',
       'Screen brightness',
       'Font size',
       'Paragraph length',
+      'Eye movements (saccades) between words',
     ],
-    correctIndex: 0,
+    correctIndex: 3,
   },
 ];
 
