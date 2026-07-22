@@ -1,3 +1,4 @@
+import type { AccessTier } from '@/lib/accessTier';
 import type { LevelProgressStatus } from './progress';
 
 export interface TrainingTier {
@@ -23,6 +24,7 @@ export interface TrainingLevel {
   xp_mastery: number;
   min_correct_to_pass: number;
   is_paid_only: boolean;
+  access_tier?: AccessTier | null;
   sort_order: number;
 }
 
@@ -44,6 +46,7 @@ export interface QuizQuestionPublic {
 
 export interface LevelWithProgress extends TrainingLevel {
   status: LevelProgressStatus;
+  access_tier: AccessTier;
   best_wpm: number | null;
   best_comprehension_pct: number | null;
   best_quiz_score: number | null;
@@ -75,6 +78,8 @@ export interface AttemptCompleteResult {
   attempt_id: string;
   saved: boolean;
   requires_auth: boolean;
+  /** Gate for continuing after this level (cliffhanger conversion). */
+  continue_gate: 'none' | 'signup' | 'subscription';
   level_id: string;
   level_title: string;
   level_number: number;
@@ -89,6 +94,7 @@ export interface AttemptCompleteResult {
   is_personal_best: boolean;
   next_level_id: string | null;
   next_level_wpm: number | null;
+  next_level_title: string | null;
   next_level_unlocked: boolean;
   reader_level: number;
   total_xp: number;

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveAccessTier } from '@/lib/accessTier';
 import type { ChapterStatus } from './types';
 import { MIN_CORRECT_TO_PASS } from './constants';
 import { calculateComprehensionPct, calculateReaderLevel } from '@/lib/training/xp';
@@ -8,12 +9,21 @@ export function resolveChapterStatus(
   completedChapters: Set<number>,
   passedChapters: Set<number>,
   isLoggedIn: boolean,
-  isPaid: boolean
+  isPaid: boolean,
+  explicitAccessTier?: string | null
 ): ChapterStatus {
-  if (chapterNumber === 1 && !isPaid) return 'locked';
-  if (!isLoggedIn) return 'locked';
+  const accessTier = resolveAccessTier(chapterNumber, explicitAccessTier);
+
+  if (accessTier === 'subscription' && !isPaid) return 'locked';
+  if (accessTier === 'signup' && !isLoggedIn) return 'locked';
+
   if (completedChapters.has(chapterNumber)) return 'completed';
-  if (chapterNumber === 1) return 'unlocked';
+
+  if (!isLoggedIn) {
+    return accessTier === 'free' ? 'unlocked' : 'locked';
+  }
+
+  if (chapterNumber === 1 || accessTier === 'free') return 'unlocked';
   if (passedChapters.has(chapterNumber - 1)) return 'unlocked';
   return 'locked';
 }

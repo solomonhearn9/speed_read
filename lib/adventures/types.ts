@@ -1,3 +1,5 @@
+import type { AccessTier } from '@/lib/accessTier';
+
 export type ChapterStatus = 'locked' | 'unlocked' | 'completed';
 
 export interface AdventureStory {
@@ -22,6 +24,7 @@ export interface AdventureChapter {
   xp_reward: number;
   completion_bonus_xp: number;
   reward_name: string | null;
+  access_tier?: AccessTier | null;
 }
 
 export interface AdventureQuestionPublic {
@@ -40,6 +43,7 @@ export interface UserAdventureProgress {
 
 export interface ChapterWithStatus extends AdventureChapter {
   status: ChapterStatus;
+  access_tier: AccessTier;
 }
 
 export interface AdventuresListResponse {
@@ -69,6 +73,7 @@ export interface AdventureCompleteResult {
   attempt_id: string;
   saved: boolean;
   requires_auth: boolean;
+  continue_gate: 'none' | 'signup' | 'subscription';
   story_id: string;
   story_slug: string;
   chapter_id: string;
@@ -83,6 +88,7 @@ export interface AdventureCompleteResult {
   reward_name: string | null;
   story_completed: boolean;
   next_chapter_slug: string | null;
+  next_chapter_title: string | null;
   next_chapter_unlocked: boolean;
   total_xp: number;
   reader_level: number;

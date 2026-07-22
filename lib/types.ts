@@ -25,6 +25,7 @@ export interface Profile {
   current_streak?: number;
   longest_streak?: number;
   last_training_date?: string | null;
+  challenge_intent?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +44,16 @@ export type AnalyticsEventName =
   | 'landing_page_view'
   | 'challenge_started'
   | 'challenge_completed'
+  | 'challenge_quiz_started'
+  | 'challenge_quiz_completed'
+  | 'challenge_intent_selected'
+  | 'challenge_intent_cta_clicked'
+  | 'chapter_1_complete'
+  | 'signup_prompt_shown'
+  | 'signup_complete'
+  | 'subscription_prompt_shown'
+  | 'subscription_complete'
+  | 'app_returned'
   | 'paste_text_started'
   | 'start_reading_clicked'
   | 'reading_session_started'

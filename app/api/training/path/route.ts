@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 import { ensureFirstLevelUnlocked, resolveProgressStatus } from '@/lib/training/progress';
+import { resolveAccessTier } from '@/lib/accessTier';
 import { fetchIsPaidProfile } from '@/lib/profile-server';
 import type { LevelWithProgress, TrainingPathResponse } from '@/lib/training/types';
 
@@ -52,11 +53,9 @@ export async function GET() {
     if (user) {
       isPaid = await fetchIsPaidProfile(service, user.id);
 
-      if (isPaid) {
-        const firstLevel = levels.find((l) => l.level_number === 1);
-        if (firstLevel) {
-          await ensureFirstLevelUnlocked(service, user.id, firstLevel.id);
-        }
+      const firstLevel = levels.find((l) => l.level_number === 1);
+      if (firstLevel) {
+        await ensureFirstLevelUnlocked(service, user.id, firstLevel.id);
       }
 
       const { data: progressRows } = await service
@@ -149,12 +148,14 @@ export async function GET() {
         .filter((l) => l.tier_id === tier.id)
         .map((level): LevelWithProgress => {
           const stored = progressMap.get(level.id);
+          const accessTier = resolveAccessTier(level.level_number, level.access_tier);
           const status = resolveProgressStatus(
             stored?.status as LevelWithProgress['status'] | undefined ?? null,
             level.level_number,
             passedLevelNumbers,
             !!user,
-            isPaid
+            isPaid,
+            level.access_tier
           );
 
           const recommendRetry =
@@ -164,6 +165,7 @@ export async function GET() {
 
           return {
             ...level,
+            access_tier: accessTier,
             status,
             best_wpm: stored?.best_wpm ?? null,
             best_comprehension_pct: stored?.best_comprehension_pct ?? null,

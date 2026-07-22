@@ -66,6 +66,7 @@ function buildNodes(data: TrainingPathResponse): MapNodeData[] {
       targetWpm: api.target_wpm,
       xpReward: api.xp_pass,
       status,
+      accessTier: api.access_tier,
       href:
         api.status === 'locked' || !api
           ? null
@@ -137,16 +138,7 @@ export default function TrainingPath() {
         nodes={nodes}
         stats={stats}
         backHref="/"
-        guestBanner={
-          data.profile.is_paid
-            ? null
-            : {
-                headline: 'Subscribe to start Level 1',
-                detail: data.profile.is_logged_in
-                  ? 'Upgrade to Pro to play the first level and unlock your progress.'
-                  : 'Sign in and subscribe to begin the Reader\'s Journey.',
-              }
-        }
+        guestBanner={null}
         onGuestSignup={
           data.profile.is_logged_in ? undefined : () => setShowAuthModal(true)
         }

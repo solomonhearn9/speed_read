@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import type { AdventureCompleteResult } from '@/lib/adventures/types';
-import AdventureSignupPrompt from './AdventureSignupPrompt';
+import { trackEvent } from '@/lib/analytics';
+import CliffhangerGate from '@/components/CliffhangerGate';
 import './adventure-theme.css';
 
 interface AdventureResultsProps {
@@ -10,6 +12,7 @@ interface AdventureResultsProps {
   storySlug: string;
   onRetry: () => void;
   onSignup?: () => void;
+  onSubscribe?: () => void;
   onNextChapter?: () => void;
 }
 
@@ -18,8 +21,30 @@ export default function AdventureResults({
   storySlug,
   onRetry,
   onSignup,
+  onSubscribe,
   onNextChapter,
 }: AdventureResultsProps) {
+  const continueGate = result.continue_gate ?? (result.requires_auth ? 'signup' : 'none');
+  const showCliffhanger = continueGate === 'signup' || continueGate === 'subscription';
+
+  useEffect(() => {
+    if (result.chapter_number === 1) {
+      trackEvent('chapter_1_complete', {
+        track: 'kids',
+        chapter_id: result.chapter_id,
+        story_slug: result.story_slug,
+        passed: result.passed,
+        continue_gate: continueGate,
+      });
+    }
+  }, [
+    result.chapter_number,
+    result.chapter_id,
+    result.story_slug,
+    result.passed,
+    continueGate,
+  ]);
+
   return (
     <div className="adventure-bg min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md text-center">
@@ -55,8 +80,16 @@ export default function AdventureResults({
           </div>
         </div>
 
-        {result.requires_auth && onSignup ? (
-          <AdventureSignupPrompt onSignup={onSignup} />
+        {showCliffhanger ? (
+          <CliffhangerGate
+            track="kids"
+            gate={continueGate}
+            nextTitle={result.next_chapter_title}
+            onPrimary={() => {
+              if (continueGate === 'signup') onSignup?.();
+              else onSubscribe?.();
+            }}
+          />
         ) : (
           <>
             {result.xp_awarded > 0 && (
@@ -71,7 +104,7 @@ export default function AdventureResults({
         )}
 
         <div className="space-y-3">
-          {result.requires_auth && onSignup && (
+          {showCliffhanger && (
             <button
               onClick={onRetry}
               className="w-full px-6 py-3 adventure-card text-white font-medium rounded-lg"
@@ -80,7 +113,7 @@ export default function AdventureResults({
             </button>
           )}
 
-          {!result.requires_auth && result.passed && result.next_chapter_slug && onNextChapter && (
+          {!showCliffhanger && result.passed && result.next_chapter_slug && onNextChapter && (
             <button
               onClick={onNextChapter}
               className="w-full px-6 py-3 adventure-btn-primary text-white font-semibold rounded-lg"
@@ -89,7 +122,7 @@ export default function AdventureResults({
             </button>
           )}
 
-          {!result.requires_auth && (
+          {!showCliffhanger && (
             <button
               onClick={onRetry}
               className="w-full px-6 py-3 adventure-card text-white font-medium rounded-lg hover:border-emerald-400/40"

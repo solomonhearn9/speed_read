@@ -2,7 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
+import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 import type { QuizQuestionPublic, TrainingLevelDetailResponse } from '@/lib/training/types';
 
 export async function GET(
@@ -25,14 +25,13 @@ export async function GET(
       return NextResponse.json({ error: 'level_not_found' }, { status: 404 });
     }
 
-    if (!user) {
+    const isPaid = user ? await fetchIsPaidProfile(service, user.id) : false;
+    const accessError = checkMapEntryAccess(level.level_number, !!user, isPaid, level.access_tier);
+    if (accessError === 'signup_required') {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
     }
-
-    const isPaid = await fetchIsPaidProfile(service, user.id);
-    const subscriptionError = mapEntrySubscriptionError(level.level_number, isPaid);
-    if (subscriptionError) {
-      return NextResponse.json({ error: subscriptionError }, { status: 403 });
+    if (accessError === 'subscription_required') {
+      return NextResponse.json({ error: 'subscription_required' }, { status: 403 });
     }
 
     if (user && level.level_number > 1) {
@@ -120,6 +119,7 @@ export async function GET(
         xp_mastery: level.xp_mastery,
         min_correct_to_pass: level.min_correct_to_pass,
         is_paid_only: level.is_paid_only,
+        access_tier: level.access_tier,
         sort_order: level.sort_order,
       },
       passage: passage!,

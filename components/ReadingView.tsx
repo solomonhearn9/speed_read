@@ -18,11 +18,13 @@ export default function ReadingView() {
     speedWPM,
     rawText,
     sessionMode,
-    viralTestResults,
     nextWord,
     pause,
     setSpeed,
-    completeViralTest,
+    viralTestDraft,
+    viralTestSpeedMode,
+    viralTestFixedWpm,
+    finishViralTestReading,
     reset,
   } = useReadingStore();
 
@@ -40,12 +42,16 @@ export default function ReadingView() {
   const [viralElapsedMs, setViralElapsedMs] = useState(0);
 
   const finishViralTest = useCallback((elapsedMs: number) => {
-    if (viralCompletingRef.current || useReadingStore.getState().viralTestResults) return;
+    if (viralCompletingRef.current || useReadingStore.getState().viralTestDraft) return;
     viralCompletingRef.current = true;
 
-    const wordsRead = useReadingStore.getState().currentIndex + 1;
+    const state = useReadingStore.getState();
+    const wordsRead = state.currentIndex + 1;
     const elapsedSec = Math.max(1, Math.round(elapsedMs / 1000));
-    const scoreWpm = getViralTestScoreWpm(elapsedMs);
+    const scoreWpm =
+      state.viralTestSpeedMode === 'fixed' && state.viralTestFixedWpm != null
+        ? state.viralTestFixedWpm
+        : getViralTestScoreWpm(elapsedMs);
     const challengeLevel = getViralTestAttemptCount();
     trackEvent('challenge_completed', {
       wpm: scoreWpm,
@@ -55,12 +61,12 @@ export default function ReadingView() {
       durationSec: elapsedSec,
     });
     trackEvent('viral_test_completed', { wordsRead, wpm: scoreWpm, durationSec: elapsedSec });
-    completeViralTest(wordsRead, elapsedSec, scoreWpm);
-  }, [completeViralTest]);
+    finishViralTestReading(wordsRead, elapsedSec, scoreWpm);
+  }, [finishViralTestReading]);
 
   // Viral test: track active reading time and end after 30 seconds
   useEffect(() => {
-    if (sessionMode !== 'viral_test' || viralTestResults) return;
+    if (sessionMode !== 'viral_test' || viralTestDraft) return;
 
     if (isPlaying) {
       viralPlayStartRef.current = Date.now();
@@ -74,10 +80,15 @@ export default function ReadingView() {
         setViralSecondsRemaining(remainingSec);
         setViralElapsedMs(elapsedMs);
 
-        const targetWpm = getViralTestWpmAtElapsedMs(elapsedMs);
-        if (viralSpeedRef.current !== targetWpm) {
-          viralSpeedRef.current = targetWpm;
-          setSpeed(targetWpm);
+        if (viralTestSpeedMode === 'ramp') {
+          const targetWpm = getViralTestWpmAtElapsedMs(elapsedMs);
+          if (viralSpeedRef.current !== targetWpm) {
+            viralSpeedRef.current = targetWpm;
+            setSpeed(targetWpm);
+          }
+        } else if (viralTestFixedWpm != null && viralSpeedRef.current !== viralTestFixedWpm) {
+          viralSpeedRef.current = viralTestFixedWpm;
+          setSpeed(viralTestFixedWpm);
         }
 
         if (elapsedMs >= VIRAL_TEST_DURATION_SEC * 1000) {
@@ -109,10 +120,18 @@ export default function ReadingView() {
         viralTimerRef.current = null;
       }
     };
-  }, [sessionMode, isPlaying, viralTestResults, finishViralTest, setSpeed]);
+  }, [
+    sessionMode,
+    isPlaying,
+    viralTestDraft,
+    viralTestSpeedMode,
+    viralTestFixedWpm,
+    finishViralTest,
+    setSpeed,
+  ]);
 
   useEffect(() => {
-    if (sessionMode === 'viral_test' && !viralTestResults) {
+    if (sessionMode === 'viral_test' && !viralTestDraft) {
       viralActiveMsRef.current = 0;
       viralPlayStartRef.current = null;
       viralSpeedRef.current = null;
@@ -120,7 +139,7 @@ export default function ReadingView() {
       setViralSecondsRemaining(VIRAL_TEST_DURATION_SEC);
       setViralElapsedMs(0);
     }
-  }, [sessionMode, viralTestResults, processedWords.length]);
+  }, [sessionMode, viralTestDraft, processedWords.length]);
 
   // Demo mode: detect if this is demo text and calculate speed change points
   useEffect(() => {
@@ -294,7 +313,9 @@ export default function ReadingView() {
               </svg>
               Back
             </button>
-            <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">30-Second Challenge</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
+              {viralTestSpeedMode === 'fixed' ? 'Find Your Edge' : 'How Fast Can You Read?'}
+            </p>
             <div className="w-12" aria-hidden="true" />
           </div>
           <div

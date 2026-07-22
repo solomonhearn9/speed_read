@@ -1,15 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import type { AttemptCompleteResult } from '@/lib/training/types';
+import { trackEvent } from '@/lib/analytics';
 import AchievementCard from './AchievementCard';
 import CompletionBadge from './CompletionBadge';
+import CliffhangerGate from '@/components/CliffhangerGate';
 
 interface TrainingResultsProps {
   result: AttemptCompleteResult;
   onRetry: () => void;
   onContinueAnyway?: () => void | Promise<void>;
   onSignup?: () => void;
+  onSubscribe?: () => void;
 }
 
 export default function TrainingResults({
@@ -17,6 +21,7 @@ export default function TrainingResults({
   onRetry,
   onContinueAnyway,
   onSignup,
+  onSubscribe,
 }: TrainingResultsProps) {
   const masteryLabel = result.mastered
     ? 'Mastered'
@@ -24,10 +29,23 @@ export default function TrainingResults({
       ? 'Passed'
       : 'Complete';
 
+  const continueGate = result.continue_gate ?? (result.requires_auth ? 'signup' : 'none');
+  const showCliffhanger = continueGate === 'signup' || continueGate === 'subscription';
   const hasNextLevel = Boolean(result.next_level_id ?? result.next_level_wpm);
   const nextLevelLabel = result.next_level_wpm
     ? `Ready for ${result.next_level_wpm} WPM?`
     : null;
+
+  useEffect(() => {
+    if (result.level_number === 1) {
+      trackEvent('chapter_1_complete', {
+        track: 'adult',
+        level_id: result.level_id,
+        passed: result.passed,
+        continue_gate: continueGate,
+      });
+    }
+  }, [result.level_number, result.level_id, result.passed, continueGate]);
 
   const primaryBtnClass =
     'w-full px-6 py-3 btn-brand font-medium rounded-lg';
@@ -113,10 +131,16 @@ export default function TrainingResults({
             </div>
           </div>
 
-          {result.requires_auth ? (
-            <div className="mb-6 p-4 rounded-lg border border-warning/30 bg-warning-light/50 text-sm text-amber-800">
-              Sign up free to save your XP and unlock all Bronze levels.
-            </div>
+          {showCliffhanger ? (
+            <CliffhangerGate
+              track="adult"
+              gate={continueGate}
+              nextTitle={result.next_level_title ?? 'Speed Ridge'}
+              onPrimary={() => {
+                if (continueGate === 'signup') onSignup?.();
+                else onSubscribe?.();
+              }}
+            />
           ) : (
             <div className="flex flex-wrap justify-center gap-2 mb-6">
               {result.xp_awarded > 0 && (
@@ -133,20 +157,14 @@ export default function TrainingResults({
             </div>
           )}
 
-          {!result.passed && !result.requires_auth && (
+          {!result.passed && !showCliffhanger && (
             <p className="text-sm text-content-secondary mb-6">
               Level complete, but mastery not reached.
             </p>
           )}
 
           <div className="space-y-3">
-            {result.requires_auth && onSignup && (
-              <button onClick={onSignup} className={primaryBtnClass}>
-                Sign Up to Save Progress
-              </button>
-            )}
-
-            {!result.passed && !result.requires_auth && (
+            {!result.passed && !showCliffhanger && (
               <>
                 <button onClick={onRetry} className={primaryBtnClass}>
                   Retry Level
@@ -162,13 +180,9 @@ export default function TrainingResults({
               </>
             )}
 
-            {result.passed && hasNextLevel && (
-              result.requires_auth && onSignup
-                ? renderNextLevelCta({ onClick: onSignup, secondary: true })
-                : renderNextLevelCta()
-            )}
+            {result.passed && hasNextLevel && continueGate === 'none' && renderNextLevelCta()}
 
-            {!result.passed && result.requires_auth && (
+            {showCliffhanger && (
               <button onClick={onRetry} className={secondaryBtnClass}>
                 Try Again
               </button>

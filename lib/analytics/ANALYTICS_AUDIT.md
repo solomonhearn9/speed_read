@@ -49,15 +49,22 @@ Filter Clarity replays: **Filters → Custom tags**.
 
 | Event | Status |
 |-------|--------|
-| `share_clicked` | Defined only — no UI hook |
-| `copy_link_clicked` | Defined only |
-| `viral_test_shared` | Defined only |
+| `invite_modal_viewed` | Defined only — no UI hook |
+| `invite_sent` | Defined only |
+| `referral_link_copied` | Defined only |
 
-## New event
+## New events (viral retention engine)
 
 | Event | Where fired |
 |-------|-------------|
-| `chapter_abandoned` | Adventure chapter page — tab hide, page hide, navigate away during `reader` or `quiz` phase |
+| `challenge_quiz_started` | `ViralTestQuiz` after challenge timer |
+| `challenge_quiz_completed` | `ViralTestQuiz` after 3 questions |
+| `challenge_intent_selected` | `ViralTestResults` intent buttons |
+| `app_returned` | `ContentInput` on return visit |
+| `share_clicked` | `ViralTestResults` share button |
+| `copy_link_clicked` | `ViralTestResults` clipboard fallback |
+| `viral_test_shared` | `ViralTestResults` after share/copy |
+| `chapter_abandoned` | Adventure chapter page — tab hide / navigate away |
 
 ## Funnel dashboards
 

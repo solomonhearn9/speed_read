@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { resolveChapterStatus } from '@/lib/adventures/progress';
+import { resolveAccessTier } from '@/lib/accessTier';
 import { fetchIsPaidProfile } from '@/lib/profile-server';
 import type { AdventureStoryResponse, ChapterWithStatus } from '@/lib/adventures/types';
 
@@ -70,16 +71,21 @@ export async function GET(
       });
     }
 
-    const chaptersWithStatus: ChapterWithStatus[] = (chapters ?? []).map((ch) => ({
-      ...ch,
-      status: resolveChapterStatus(
-        ch.chapter_number,
-        completedChapters,
-        passedChapters,
-        !!user,
-        isPaid
-      ),
-    }));
+    const chaptersWithStatus: ChapterWithStatus[] = (chapters ?? []).map((ch) => {
+      const accessTier = resolveAccessTier(ch.chapter_number, ch.access_tier);
+      return {
+        ...ch,
+        access_tier: accessTier,
+        status: resolveChapterStatus(
+          ch.chapter_number,
+          completedChapters,
+          passedChapters,
+          !!user,
+          isPaid,
+          ch.access_tier
+        ),
+      };
+    });
 
     let profileData = { total_xp: 0, reader_level: 1, is_logged_in: !!user, is_paid: isPaid };
     if (user) {

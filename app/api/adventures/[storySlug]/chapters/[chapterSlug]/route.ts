@@ -1,7 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { resolveChapterStatus } from '@/lib/adventures/progress';
-import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
+import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 import type { AdventureChapterDetailResponse, AdventureQuestionPublic } from '@/lib/adventures/types';
 
 export const dynamic = 'force-dynamic';
@@ -36,20 +36,24 @@ export async function GET(
       return NextResponse.json({ error: 'chapter_not_found' }, { status: 404 });
     }
 
-    if (!user) {
+    const isPaid = user ? await fetchIsPaidProfile(service, user.id) : false;
+    const accessError = checkMapEntryAccess(
+      chapter.chapter_number,
+      !!user,
+      isPaid,
+      chapter.access_tier
+    );
+    if (accessError === 'signup_required') {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
     }
-
-    const isPaid = await fetchIsPaidProfile(service, user.id);
-    const subscriptionError = mapEntrySubscriptionError(chapter.chapter_number, isPaid);
-    if (subscriptionError) {
-      return NextResponse.json({ error: subscriptionError }, { status: 403 });
+    if (accessError === 'subscription_required') {
+      return NextResponse.json({ error: 'subscription_required' }, { status: 403 });
     }
 
     const completedChapters = new Set<number>();
     const passedChapters = new Set<number>();
 
-    if (chapter.chapter_number > 1) {
+    if (user && chapter.chapter_number > 1) {
       const { data: userProgress } = await service
         .from('user_adventure_progress')
         .select('chapters_completed')
@@ -85,8 +89,9 @@ export async function GET(
       chapter.chapter_number,
       completedChapters,
       passedChapters,
-      true,
-      isPaid
+      !!user,
+      isPaid,
+      chapter.access_tier
     );
 
     if (status === 'locked') {

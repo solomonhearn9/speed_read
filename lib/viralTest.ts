@@ -38,7 +38,7 @@ Eye movements waste nearly half of normal reading time. Fixed point reading remo
 
 Faster reading often improves focus because your mind has no time to wander. Every word demands attention for just a fraction of a second.
 
-When the timer stops you will see your score and percentile. How fast can you read in thirty seconds? Stay locked in until time runs out.`;
+When the timer stops, a short comprehension check confirms what stuck. How fast can you read in thirty seconds? Stay locked in until time runs out.`;
 
 export function isViralTestText(text: string): boolean {
   return text.trimStart().startsWith(VIRAL_TEST_MARKER);
@@ -58,6 +58,48 @@ export function getViralTestScoreWpm(elapsedMs: number): number {
   return getViralTestWpmAtElapsedMs(elapsedMs);
 }
 
+/** Retry speed after a weak comprehension result — find the reader's actual edge. */
+export function getViralTestRetryWpm(challengeWpm: number): number {
+  return Math.max(100, Math.round(challengeWpm * 0.8));
+}
+
+export type ViralTestRevealTier = 'verified' | 'confirmed' | 'retry';
+
+export function getViralTestRevealTier(correct: number): ViralTestRevealTier {
+  if (correct >= 3) return 'verified';
+  if (correct === 2) return 'confirmed';
+  return 'retry';
+}
+
+/** Speed-based badge name. Verified (3/3) appends "— Verified". */
+export function getViralTestTierName(wpm: number): string {
+  if (wpm >= 900) return 'Machine';
+  if (wpm >= 700) return 'Blitz';
+  if (wpm >= 500) return 'Rocket';
+  if (wpm >= 350) return 'Swift';
+  if (wpm >= 200) return 'Steady';
+  return 'Starter';
+}
+
+export function getViralTestBadgeLabel(wpm: number, revealTier: ViralTestRevealTier): string | null {
+  if (revealTier === 'retry') return null;
+  const name = getViralTestTierName(wpm);
+  return revealTier === 'verified' ? `${name} — Verified` : name;
+}
+
+export function getViralTestRevealHeadline(
+  wpm: number,
+  revealTier: ViralTestRevealTier
+): string {
+  if (revealTier === 'verified') {
+    return `Confirmed: ${wpm} WPM, full comprehension`;
+  }
+  if (revealTier === 'confirmed') {
+    return `Confirmed: ${wpm} WPM`;
+  }
+  return `The words moved at ${wpm} WPM, but that one got away from you. Try again at your real speed?`;
+}
+
 export function formatViralTestResultSummary(
   wpm: number,
   percentile: number,
@@ -67,8 +109,76 @@ export function formatViralTestResultSummary(
   return `${wpm} WPM faster than ${percentile}% of readers · ${wordsRead} words in ${durationSec}s`;
 }
 
-export function getViralTestShareMessage(wpm: number, percentile: number): string {
-  return `${wpm} WPM faster than ${percentile}% of readers. Can you beat me?`;
+export function getViralTestShareMessage(
+  wpm: number,
+  percentile: number,
+  options?: { comprehensionPct?: number; fullComprehension?: boolean; badgeLabel?: string | null }
+): string {
+  if (options?.fullComprehension) {
+    const badge = options.badgeLabel ? ` (${options.badgeLabel})` : '';
+    return `Confirmed: ${wpm} WPM, full comprehension${badge}. Faster than ${percentile}% of readers. Can you beat me?`;
+  }
+  const compPart =
+    options?.comprehensionPct != null ? ` · ${options.comprehensionPct}% comprehension` : '';
+  return `${wpm} WPM faster than ${percentile}% of readers${compPart}. Can you beat me?`;
+}
+
+/** Seconds allowed to answer each comprehension question (anti-lookup). */
+export const VIRAL_TEST_QUIZ_QUESTION_SEC = 9;
+
+export interface ViralTestQuizQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+}
+
+export const VIRAL_TEST_QUIZ_QUESTIONS: ViralTestQuizQuestion[] = [
+  {
+    id: 'vt-q1',
+    prompt: 'What reading method does this challenge use?',
+    options: [
+      'Rapid Serial Visual Presentation (RSVP)',
+      'Left-to-right page scanning',
+      'Audio narration only',
+      'Highlight-and-skim',
+    ],
+    correctIndex: 0,
+  },
+  {
+    id: 'vt-q2',
+    prompt: 'What should you focus on in each word during the challenge?',
+    options: [
+      'The red letter (Optimal Recognition Point)',
+      'The first letter only',
+      'The last letter only',
+      'The word length',
+    ],
+    correctIndex: 0,
+  },
+  {
+    id: 'vt-q3',
+    prompt: 'According to the passage, what slows most people down when reading normally?',
+    options: [
+      'Eye movements (saccades) between words',
+      'Screen brightness',
+      'Font size',
+      'Paragraph length',
+    ],
+    correctIndex: 0,
+  },
+];
+
+export function gradeViralTestQuiz(
+  answers: Array<{ question_id: string; selected_index: number }>
+): { correct: number; total: number; pct: number } {
+  const answerMap = new Map(answers.map((a) => [a.question_id, a.selected_index]));
+  let correct = 0;
+  for (const q of VIRAL_TEST_QUIZ_QUESTIONS) {
+    if (answerMap.get(q.id) === q.correctIndex) correct += 1;
+  }
+  const total = VIRAL_TEST_QUIZ_QUESTIONS.length;
+  return { correct, total, pct: total > 0 ? Math.round((correct / total) * 100) : 0 };
 }
 
 const PERCENTILE_BREAKPOINTS: [number, number][] = [

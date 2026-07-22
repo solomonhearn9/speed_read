@@ -63,8 +63,8 @@ const REASON_COPY: Record<UpgradeReason, { title: string; body: string }> = {
     body: 'Access higher-speed levels and endurance modes with a Pro plan.',
   },
   map_subscription_required: {
-    title: 'Subscribe to start',
-    body: 'The first level requires a Pro subscription. Upgrade to play and save your progress.',
+    title: 'Subscribe to continue',
+    body: 'Subscribe to continue — from $4.99/mo. Unlock advanced levels and the rest of the journey.',
   },
 };
 
@@ -88,6 +88,9 @@ export default function UpgradeModal({
       trackedOpenRef.current = true;
       trackEvent('upgrade_modal_viewed', { reason });
       trackEvent('pricing_page_viewed', { reason });
+      if (reason === 'map_subscription_required') {
+        trackEvent('subscription_prompt_shown', { source: 'upgrade_modal', reason });
+      }
     }
     if (!isOpen) {
       trackedOpenRef.current = false;
@@ -109,6 +112,9 @@ export default function UpgradeModal({
       priceType,
       reason,
     });
+    if (reason === 'map_subscription_required') {
+      trackEvent('subscription_complete', { checkout_type: priceType, reason, step: 'checkout_started' });
+    }
 
     try {
       const res = await fetch('/api/checkout', {

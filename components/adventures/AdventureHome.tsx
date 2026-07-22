@@ -57,6 +57,7 @@ function buildNodes(data: AdventureStoryResponse): MapNodeData[] {
       targetWpm: ch.target_wpm,
       xpReward: ch.xp_reward + ch.completion_bonus_xp,
       status,
+      accessTier: ch.access_tier,
       href:
         ch.status === 'locked'
           ? null
@@ -130,16 +131,7 @@ export default function AdventureHome() {
         nodes={nodes}
         stats={stats}
         backHref="/"
-        guestBanner={
-          data.profile.is_paid
-            ? null
-            : {
-                headline: 'Subscribe to start Chapter 1',
-                detail: data.profile.is_logged_in
-                  ? 'Upgrade to Pro to play the first chapter and save your adventure progress.'
-                  : 'Sign in and subscribe to begin The Lost Crystal Dragon.',
-              }
-        }
+        guestBanner={null}
         onGuestSignup={
           data.profile.is_logged_in ? undefined : () => setShowAuthModal(true)
         }

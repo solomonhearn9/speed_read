@@ -1,6 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
+import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     const { data: chapter } = await service
       .from('adventure_chapters')
-      .select('id, slug, target_wpm, word_count, chapter_number')
+      .select('id, slug, target_wpm, word_count, chapter_number, access_tier')
       .eq('id', chapterId)
       .eq('story_id', storyId)
       .maybeSingle();
@@ -26,14 +26,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
-    if (!user) {
+    const isPaid = user ? await fetchIsPaidProfile(service, user.id) : false;
+    const accessError = checkMapEntryAccess(
+      chapter.chapter_number,
+      !!user,
+      isPaid,
+      chapter.access_tier
+    );
+    if (accessError === 'signup_required') {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
     }
+    if (accessError === 'subscription_required') {
+      return NextResponse.json({ error: 'subscription_required' }, { status: 403 });
+    }
 
-    const isPaid = await fetchIsPaidProfile(service, user.id);
-    const subscriptionError = mapEntrySubscriptionError(chapter.chapter_number, isPaid);
-    if (subscriptionError) {
-      return NextResponse.json({ error: subscriptionError }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({
+        attempt_id: null,
+        word_count: chapter.word_count,
+        anonymous: true,
+      });
     }
 
     const { data: attempt, error } = await service

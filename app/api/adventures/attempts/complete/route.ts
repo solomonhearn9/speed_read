@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
+import { getContinueGate } from '@/lib/accessTier';
+import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 import { gradeAnswers, updateProfileXp } from '@/lib/adventures/progress';
 import type { AdventureCompleteResult } from '@/lib/adventures/types';
 
@@ -45,14 +46,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
-    if (!user) {
+    const isPaid = user ? await fetchIsPaidProfile(service, user.id) : false;
+    const accessError = checkMapEntryAccess(
+      chapter.chapter_number,
+      !!user,
+      isPaid,
+      chapter.access_tier
+    );
+    if (accessError === 'signup_required') {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
     }
-
-    const isPaid = await fetchIsPaidProfile(service, user.id);
-    const subscriptionError = mapEntrySubscriptionError(chapter.chapter_number, isPaid);
-    if (subscriptionError) {
-      return NextResponse.json({ error: subscriptionError }, { status: 403 });
+    if (accessError === 'subscription_required') {
+      return NextResponse.json({ error: 'subscription_required' }, { status: 403 });
     }
 
     const { data: questions } = await service
@@ -74,6 +79,53 @@ export async function POST(request: Request) {
     }
 
     const completedAt = new Date().toISOString();
+
+    let nextChapter: { slug: string; title: string; chapter_number: number; access_tier: string | null } | null =
+      null;
+    if (grade.passed && chapter.chapter_number < story.total_chapters) {
+      const { data } = await service
+        .from('adventure_chapters')
+        .select('slug, title, chapter_number, access_tier')
+        .eq('story_id', storyId)
+        .eq('chapter_number', chapter.chapter_number + 1)
+        .maybeSingle();
+      nextChapter = data;
+    }
+
+    // Anonymous free-tier completion
+    if (!user) {
+      const continueGate = getContinueGate(
+        nextChapter?.chapter_number ?? null,
+        false,
+        false,
+        nextChapter?.access_tier
+      );
+      const result: AdventureCompleteResult = {
+        attempt_id: '',
+        saved: false,
+        requires_auth: continueGate === 'signup',
+        continue_gate: continueGate,
+        story_id: storyId,
+        story_slug: story.slug,
+        chapter_id: chapterId,
+        chapter_slug: chapter.slug,
+        chapter_number: chapter.chapter_number,
+        chapter_title: chapter.title,
+        questions_correct: grade.correct,
+        questions_total: grade.total,
+        comprehension_pct: grade.pct,
+        passed: grade.passed,
+        xp_awarded: 0,
+        reward_name: chapter.reward_name,
+        story_completed: false,
+        next_chapter_slug: nextChapter?.slug ?? null,
+        next_chapter_title: nextChapter?.title ?? null,
+        next_chapter_unlocked: false,
+        total_xp: 0,
+        reader_level: 1,
+      };
+      return NextResponse.json(result);
+    }
 
     if (body.attempt_id) {
       await service
@@ -136,21 +188,18 @@ export async function POST(request: Request) {
 
     const profileUpdate = await updateProfileXp(service, user.id, xpAwarded);
 
-    let nextChapterSlug: string | null = null;
-    if (grade.passed && chapter.chapter_number < story.total_chapters) {
-      const { data: nextChapter } = await service
-        .from('adventure_chapters')
-        .select('slug')
-        .eq('story_id', storyId)
-        .eq('chapter_number', chapter.chapter_number + 1)
-        .maybeSingle();
-      nextChapterSlug = nextChapter?.slug ?? null;
-    }
+    const continueGate = getContinueGate(
+      nextChapter?.chapter_number ?? null,
+      true,
+      isPaid,
+      nextChapter?.access_tier
+    );
 
     const result: AdventureCompleteResult = {
       attempt_id: body.attempt_id ?? '',
       saved: true,
-      requires_auth: false,
+      requires_auth: continueGate === 'signup',
+      continue_gate: continueGate,
       story_id: storyId,
       story_slug: story.slug,
       chapter_id: chapterId,
@@ -164,8 +213,9 @@ export async function POST(request: Request) {
       xp_awarded: xpAwarded,
       reward_name: chapter.reward_name,
       story_completed: storyCompleted,
-      next_chapter_slug: nextChapterSlug,
-      next_chapter_unlocked: !!nextChapterSlug,
+      next_chapter_slug: nextChapter?.slug ?? null,
+      next_chapter_title: nextChapter?.title ?? null,
+      next_chapter_unlocked: !!nextChapter && continueGate === 'none',
       total_xp: profileUpdate.total_xp,
       reader_level: profileUpdate.reader_level,
     };

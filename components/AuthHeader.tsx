@@ -63,7 +63,7 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
     : 'text-sm text-content-secondary hover:text-content-primary surface-card rounded-lg px-3 py-1.5 transition-colors max-w-[140px] sm:max-w-[200px] truncate';
 
   const signupBtnClass = isChallenge
-    ? 'text-xs sm:text-sm btn-signup-gradient font-semibold rounded-full px-3 sm:px-5 py-1.5 sm:py-2 transition-opacity hover:opacity-90 whitespace-nowrap'
+    ? 'text-xs sm:text-sm btn-challenge font-semibold px-3 sm:px-5 py-1.5 sm:py-2 whitespace-nowrap'
     : 'text-sm btn-brand rounded-lg px-3 py-1.5';
 
   const loginBtnClass = isChallenge
@@ -106,7 +106,7 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
       <header
         className={`sticky top-0 z-20 w-full ${
           isChallenge
-            ? 'border-b border-white/5 bg-challenge-bg-start/90 backdrop-blur-md'
+            ? 'border-b border-white/5 bg-black'
             : 'border-b border-line bg-surface-primary/90 backdrop-blur-md'
         }`}
       >

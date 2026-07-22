@@ -113,3 +113,66 @@ WHERE created_at >= NOW() - INTERVAL '30 days'
   )
 GROUP BY 1, 2, 3
 ORDER BY events DESC;
+
+-- ---------------------------------------------------------------------------
+-- D7 challenge progression return (approximate — uses anon_id / user_id)
+-- Challenge completers who start level 2+ or chapter 2+ within 7 days
+-- ---------------------------------------------------------------------------
+
+WITH completers AS (
+  SELECT
+    COALESCE(user_id::text, properties->>'anon_id') AS actor_id,
+    MIN(created_at) AS first_complete_at
+  FROM analytics_events
+  WHERE event_name = 'challenge_completed'
+    AND created_at >= NOW() - INTERVAL '60 days'
+    AND COALESCE(user_id::text, properties->>'anon_id') IS NOT NULL
+  GROUP BY 1
+),
+returns AS (
+  SELECT DISTINCT
+    COALESCE(e.user_id::text, e.properties->>'anon_id') AS actor_id
+  FROM analytics_events e
+  INNER JOIN completers c
+    ON COALESCE(e.user_id::text, e.properties->>'anon_id') = c.actor_id
+  WHERE e.event_name IN (
+    'app_returned',
+    'training_level_started',
+    'adventure_chapter_started'
+  )
+    AND e.created_at > c.first_complete_at
+    AND e.created_at <= c.first_complete_at + INTERVAL '7 days'
+)
+SELECT
+  COUNT(*) AS challenge_completers,
+  COUNT(r.actor_id) AS returned_within_7d,
+  ROUND(100.0 * COUNT(r.actor_id) / NULLIF(COUNT(*), 0), 2) AS d7_return_pct
+FROM completers c
+LEFT JOIN returns r ON c.actor_id = r.actor_id;
+
+-- ---------------------------------------------------------------------------
+-- Challenge comprehension by speed tier (last 30 days)
+-- ---------------------------------------------------------------------------
+
+SELECT
+  (properties->>'speed_wpm')::int AS speed_wpm,
+  AVG((properties->>'comprehension_pct')::numeric) AS avg_comprehension_pct,
+  COUNT(*) AS quiz_completions
+FROM analytics_events
+WHERE event_name = 'challenge_quiz_completed'
+  AND created_at >= NOW() - INTERVAL '30 days'
+GROUP BY 1
+ORDER BY 1;
+
+-- ---------------------------------------------------------------------------
+-- Intent segmentation (last 30 days)
+-- ---------------------------------------------------------------------------
+
+SELECT
+  properties->>'intent' AS intent,
+  COUNT(*) AS selections
+FROM analytics_events
+WHERE event_name = 'challenge_intent_selected'
+  AND created_at >= NOW() - INTERVAL '30 days'
+GROUP BY 1
+ORDER BY selections DESC;

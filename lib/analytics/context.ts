@@ -1,6 +1,7 @@
 import type { PlanStatus } from '@/lib/types';
 import { getAttributionProperties } from './attribution';
 import { getDeviceType } from './device';
+import { getOrCreateAnonId } from '@/lib/anonId';
 import { deriveUserType, getSessionFlags } from './session-flags';
 
 export interface AnalyticsContext {
@@ -43,6 +44,7 @@ export function enrichEventProperties(
 
   const enriched: Record<string, unknown> = {
     ...attribution,
+    anon_id: getOrCreateAnonId(),
     is_logged_in: context.is_logged_in,
     plan_status: context.plan_status,
     user_type: userType,

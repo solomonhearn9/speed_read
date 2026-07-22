@@ -6,12 +6,22 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useChapterAbandonment } from '@/lib/analytics';
 import { trackAdventureEvent } from '@/lib/adventures/analytics';
+import {
+  TOMORROW_LOCK_AFTER_CHAPTER,
+  TOMORROW_LOCK_CHAPTER_SLUG,
+} from '@/lib/adventures/constants';
+import {
+  getChapterLockMessage,
+  isChapterLockedBySchedule,
+  setChapterLockedUntil,
+} from '@/lib/adventures/chapterLock';
 import type { AdventureChapterDetailResponse, AdventureCompleteResult } from '@/lib/adventures/types';
 import AdventureReader from '@/components/adventures/AdventureReader';
 import AdventureQuizFlow from '@/components/adventures/AdventureQuizFlow';
 import AdventureResults from '@/components/adventures/AdventureResults';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
+import { trackEvent } from '@/lib/analytics';
 import '@/components/adventures/adventure-theme.css';
 
 type Phase = 'loading' | 'reader' | 'quiz' | 'results' | 'error';
@@ -47,6 +57,16 @@ export default function AdventureChapterPage() {
   const loadChapter = useCallback(async () => {
     setPhase('loading');
     setError(null);
+
+    if (
+      chapterSlug === TOMORROW_LOCK_CHAPTER_SLUG &&
+      isChapterLockedBySchedule(TOMORROW_LOCK_CHAPTER_SLUG)
+    ) {
+      setError(getChapterLockMessage(TOMORROW_LOCK_CHAPTER_SLUG) ?? 'Come back tomorrow to unlock this chapter.');
+      setPhase('error');
+      return;
+    }
+
     try {
       const res = await fetch(`/api/adventures/${storySlug}/chapters/${chapterSlug}`);
       if (res.status === 401) {
@@ -173,6 +193,13 @@ export default function AdventureChapterPage() {
     if (completeResult.story_completed) {
       trackAdventureEvent('adventure_story_completed', profile, !!user, props);
     }
+    if (
+      completeResult.passed &&
+      data.chapter_number === TOMORROW_LOCK_AFTER_CHAPTER &&
+      completeResult.next_chapter_slug === TOMORROW_LOCK_CHAPTER_SLUG
+    ) {
+      setChapterLockedUntil(TOMORROW_LOCK_CHAPTER_SLUG);
+    }
     if (completeResult.requires_auth) {
       trackAdventureEvent('adventure_signup_prompt_viewed', profile, false, props);
     }
@@ -277,8 +304,9 @@ export default function AdventureChapterPage() {
             trackAdventureEvent('adventure_signup_clicked', profile, false);
             setShowAuthModal(true);
           }}
+          onSubscribe={() => setShowUpgradeModal(true)}
           onNextChapter={
-            result.next_chapter_slug
+            result.next_chapter_slug && result.continue_gate === 'none'
               ? () => {
                   trackAdventureEvent('adventure_next_chapter_clicked', profile, !!user, {
                     story_slug: storySlug,
@@ -289,10 +317,28 @@ export default function AdventureChapterPage() {
               : undefined
           }
         />
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="map_subscription_required"
+          onRequireAuth={() => {
+            setShowUpgradeModal(false);
+            setShowAuthModal(true);
+          }}
+        />
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           initialMode="signup"
+          onSuccess={() => {
+            trackEvent('signup_complete', { track: 'kids', source: 'cliffhanger' });
+            setShowAuthModal(false);
+            if (result.next_chapter_slug) {
+              window.location.href = `/adventures/${storySlug}/${result.next_chapter_slug}`;
+            } else {
+              window.location.href = `/adventures/${storySlug}`;
+            }
+          }}
         />
       </>
     );

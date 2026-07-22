@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveAccessTier } from '@/lib/accessTier';
 import { calculateReaderLevel } from './xp';
 
 export type LevelProgressStatus = 'locked' | 'unlocked' | 'completed' | 'mastered';
@@ -37,10 +38,10 @@ export async function getNextLevel(
   service: SupabaseClient,
   tierId: string,
   currentLevelNumber: number
-): Promise<{ id: string; target_wpm: number } | null> {
+): Promise<{ id: string; target_wpm: number; title: string; level_number: number; access_tier: string | null } | null> {
   const { data: nextLevel } = await service
     .from('training_levels')
-    .select('id, target_wpm')
+    .select('id, target_wpm, title, level_number, access_tier')
     .eq('tier_id', tierId)
     .eq('level_number', currentLevelNumber + 1)
     .maybeSingle();
@@ -53,7 +54,7 @@ export async function unlockNextLevel(
   userId: string,
   currentLevelNumber: number,
   tierId: string
-): Promise<{ id: string; target_wpm: number } | null> {
+): Promise<{ id: string; target_wpm: number; title: string; level_number: number; access_tier: string | null } | null> {
   const nextLevel = await getNextLevel(service, tierId, currentLevelNumber);
   if (!nextLevel) return null;
 
@@ -84,12 +85,21 @@ export function resolveProgressStatus(
   levelNumber: number,
   passedLevels: Set<number>,
   isLoggedIn: boolean,
-  isPaid: boolean
+  isPaid: boolean,
+  explicitAccessTier?: string | null
 ): LevelProgressStatus {
-  if (levelNumber === 1 && !isPaid) return 'locked';
-  if (!isLoggedIn) return 'locked';
+  const accessTier = resolveAccessTier(levelNumber, explicitAccessTier);
+
+  if (accessTier === 'subscription' && !isPaid) return 'locked';
+  if (accessTier === 'signup' && !isLoggedIn) return 'locked';
+
+  // Free tier (ch/level 1): playable anonymously
+  if (!isLoggedIn) {
+    return accessTier === 'free' ? 'unlocked' : 'locked';
+  }
+
   if (stored) return stored;
-  if (levelNumber === 1) return 'unlocked';
+  if (levelNumber === 1 || accessTier === 'free') return 'unlocked';
   if (passedLevels.has(levelNumber - 1)) return 'unlocked';
   return 'locked';
 }

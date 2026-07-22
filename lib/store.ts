@@ -5,12 +5,29 @@ import {
   VIRAL_TEST_INITIAL_WPM,
   calculatePercentile,
   getViralTestPassage,
+  getViralTestRetryWpm,
   getViralTestScoreWpm,
+  getViralTestRevealTier,
+  type ViralTestRevealTier,
 } from './viralTest';
 
 export type SessionMode = 'normal' | 'viral_test';
+export type ViralChallengePhase = 'none' | 'reading' | 'quiz' | 'results';
+/** Progressive ramp for the main challenge; fixed WPM for comprehension retry. */
+export type ViralTestSpeedMode = 'ramp' | 'fixed';
 
 export interface ViralTestResults {
+  wpm: number;
+  percentile: number;
+  wordsRead: number;
+  durationSec: number;
+  comprehensionCorrect: number;
+  comprehensionTotal: number;
+  comprehensionPct: number;
+  revealTier: ViralTestRevealTier;
+}
+
+export interface ViralTestDraft {
   wpm: number;
   percentile: number;
   wordsRead: number;
@@ -32,6 +49,10 @@ export interface ReadingState {
 
   // Viral reading test
   sessionMode: SessionMode;
+  viralChallengePhase: ViralChallengePhase;
+  viralTestSpeedMode: ViralTestSpeedMode;
+  viralTestFixedWpm: number | null;
+  viralTestDraft: ViralTestDraft | null;
   viralTestResults: ViralTestResults | null;
   landingInputMethod: 'text' | 'file' | null;
   
@@ -52,8 +73,10 @@ export interface ReadingState {
   setViewMode: (mode: 'reading' | 'page') => void;
   jumpToWord: (index: number) => void;
   setSessionMode: (mode: SessionMode) => void;
-  startViralTest: () => void;
-  completeViralTest: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => void;
+  startViralTest: (options?: { fixedWpm?: number }) => void;
+  finishViralTestReading: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => void;
+  completeViralTestQuiz: (comprehensionCorrect: number, comprehensionTotal: number, comprehensionPct: number) => void;
+  retryViralTestAtReducedSpeed: () => void;
   clearViralTestResults: () => void;
   clearLandingInputMethod: () => void;
   returnToLanding: (inputMethod?: 'text' | 'file') => void;
@@ -68,6 +91,10 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
   speedWPM: 250,
   viewMode: 'reading',
   sessionMode: 'normal',
+  viralChallengePhase: 'none',
+  viralTestSpeedMode: 'ramp',
+  viralTestFixedWpm: null,
+  viralTestDraft: null,
   viralTestResults: null,
   landingInputMethod: null,
   progress: 0,
@@ -169,36 +196,83 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
   },
 
   setSessionMode: (mode: SessionMode) => {
-    set({ sessionMode: mode, viralTestResults: null });
+    set({
+      sessionMode: mode,
+      viralTestResults: null,
+      viralTestDraft: null,
+      viralChallengePhase: 'none',
+      viralTestSpeedMode: 'ramp',
+      viralTestFixedWpm: null,
+    });
   },
 
-  startViralTest: () => {
+  startViralTest: (options) => {
+    const fixedWpm = options?.fixedWpm;
+    const startWpm = fixedWpm ?? VIRAL_TEST_INITIAL_WPM;
     const passage = getViralTestPassage(VIRAL_TEST_TEXT);
-    const words = processText(passage, VIRAL_TEST_INITIAL_WPM);
+    const words = processText(passage, startWpm);
     set({
       rawText: passage,
       processedWords: words,
       currentIndex: 0,
       progress: 0,
       isPlaying: false,
-      speedWPM: VIRAL_TEST_INITIAL_WPM,
+      speedWPM: startWpm,
       viewMode: 'reading',
       sessionMode: 'viral_test',
+      viralChallengePhase: 'reading',
+      viralTestSpeedMode: fixedWpm != null ? 'fixed' : 'ramp',
+      viralTestFixedWpm: fixedWpm ?? null,
+      viralTestDraft: null,
       viralTestResults: null,
     });
   },
 
-  completeViralTest: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => {
-    const wpm = scoreWpm ?? getViralTestScoreWpm(elapsedSec * 1000);
+  finishViralTestReading: (wordsRead: number, elapsedSec: number, scoreWpm?: number) => {
+    const { viralTestSpeedMode, viralTestFixedWpm } = get();
+    const wpm =
+      scoreWpm ??
+      (viralTestSpeedMode === 'fixed' && viralTestFixedWpm != null
+        ? viralTestFixedWpm
+        : getViralTestScoreWpm(elapsedSec * 1000));
     const percentile = calculatePercentile(wpm);
     set({
       isPlaying: false,
-      viralTestResults: { wpm, percentile, wordsRead, durationSec: elapsedSec },
+      viralChallengePhase: 'quiz',
+      viralTestDraft: { wpm, percentile, wordsRead, durationSec: elapsedSec },
     });
   },
 
+  completeViralTestQuiz: (comprehensionCorrect: number, comprehensionTotal: number, comprehensionPct: number) => {
+    const draft = get().viralTestDraft;
+    if (!draft) return;
+    set({
+      viralChallengePhase: 'results',
+      viralTestResults: {
+        ...draft,
+        comprehensionCorrect,
+        comprehensionTotal,
+        comprehensionPct,
+        revealTier: getViralTestRevealTier(comprehensionCorrect),
+      },
+    });
+  },
+
+  retryViralTestAtReducedSpeed: () => {
+    const results = get().viralTestResults;
+    if (!results) return;
+    const retryWpm = getViralTestRetryWpm(results.wpm);
+    get().startViralTest({ fixedWpm: retryWpm });
+  },
+
   clearViralTestResults: () => {
-    set({ viralTestResults: null });
+    set({
+      viralTestResults: null,
+      viralTestDraft: null,
+      viralChallengePhase: 'none',
+      viralTestSpeedMode: 'ramp',
+      viralTestFixedWpm: null,
+    });
   },
 
   clearLandingInputMethod: () => {
@@ -214,6 +288,10 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
       progress: 0,
       viewMode: 'reading',
       sessionMode: 'normal',
+      viralChallengePhase: 'none',
+      viralTestSpeedMode: 'ramp',
+      viralTestFixedWpm: null,
+      viralTestDraft: null,
       viralTestResults: null,
       landingInputMethod: inputMethod,
     });
@@ -228,6 +306,10 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
       progress: 0,
       viewMode: 'reading',
       sessionMode: 'normal',
+      viralChallengePhase: 'none',
+      viralTestSpeedMode: 'ramp',
+      viralTestFixedWpm: null,
+      viralTestDraft: null,
       viralTestResults: null,
       landingInputMethod: null,
     });

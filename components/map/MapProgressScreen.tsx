@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { MapConfig, MapLayout } from '@/lib/maps/mapConfigs';
+import { getLockedNodeLabel, type AccessTier } from '@/lib/accessTier';
 import './map-theme.css';
 
 /* ── Public types ───────────────────────────────────────────────────────── */
@@ -26,6 +27,7 @@ export interface MapNodeData {
   targetWpm: number | null;
   xpReward: number | null;
   status: MapNodeStatus;
+  accessTier?: AccessTier;
   /** Route to start/replay the level; null when not playable. */
   href: string | null;
   /** 0–3 stars shown above completed nodes. */
@@ -52,8 +54,6 @@ interface MapProgressScreenProps {
   backHref?: string;
   guestBanner?: MapGuestBanner | null;
   onGuestSignup?: () => void;
-  /** Level/chapter numbers that require subscription instead of progression unlock. */
-  subscriptionGatedLevels?: number[];
   onSubscriptionGate?: () => void;
 }
 
@@ -126,7 +126,6 @@ export default function MapProgressScreen({
   backHref = '/',
   guestBanner,
   onGuestSignup,
-  subscriptionGatedLevels = [1],
   onSubscriptionGate,
 }: MapProgressScreenProps) {
   const breakpoint = useBreakpoint();
@@ -177,18 +176,23 @@ export default function MapProgressScreen({
 
   const handleNodeTap = (node: MapNodeData) => {
     if (node.status === 'locked' || node.status === 'coming-soon') {
-      if (
-        node.status === 'locked' &&
-        subscriptionGatedLevels.includes(node.levelNumber) &&
-        onSubscriptionGate
-      ) {
-        onSubscriptionGate();
-        return;
+      if (node.status === 'locked') {
+        const tier = node.accessTier;
+        if (tier === 'signup' && onGuestSignup) {
+          onGuestSignup();
+          return;
+        }
+        if (tier === 'subscription' && onSubscriptionGate) {
+          onSubscriptionGate();
+          return;
+        }
       }
       const msg =
         node.status === 'coming-soon'
           ? 'This level is coming soon!'
-          : `Complete ${node.levelNumber === 1 ? 'the previous step' : `Level ${node.levelNumber - 1}`} to unlock this one.`;
+          : node.accessTier
+            ? getLockedNodeLabel(node.accessTier)
+            : `Complete ${node.levelNumber === 1 ? 'the previous step' : `Level ${node.levelNumber - 1}`} to unlock this one.`;
       setLockedToast(msg);
       if (toastTimer.current) clearTimeout(toastTimer.current);
       toastTimer.current = setTimeout(() => setLockedToast(null), 2400);

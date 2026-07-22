@@ -2,7 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
+import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     const { data: level } = await service
       .from('training_levels')
-      .select('id, passage_id, target_wpm, slug, level_number')
+      .select('id, passage_id, target_wpm, slug, level_number, access_tier')
       .eq('id', levelId)
       .maybeSingle();
 
@@ -25,14 +25,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'level_not_found' }, { status: 404 });
     }
 
-    if (!user) {
+    const isPaid = user ? await fetchIsPaidProfile(service, user.id) : false;
+    const accessError = checkMapEntryAccess(level.level_number, !!user, isPaid, level.access_tier);
+    if (accessError === 'signup_required') {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
     }
-
-    const isPaid = await fetchIsPaidProfile(service, user.id);
-    const subscriptionError = mapEntrySubscriptionError(level.level_number, isPaid);
-    if (subscriptionError) {
-      return NextResponse.json({ error: subscriptionError }, { status: 403 });
+    if (accessError === 'subscription_required') {
+      return NextResponse.json({ error: 'subscription_required' }, { status: 403 });
     }
 
     const { data: passage } = await service
@@ -42,6 +41,11 @@ export async function POST(request: Request) {
       .single();
 
     const wc = passage?.word_count ?? 0;
+
+    // Anonymous free-tier play: no DB attempt row
+    if (!user) {
+      return NextResponse.json({ attempt_id: null, word_count: wc, anonymous: true });
+    }
 
     const { data: attempt, error } = await service
       .from('level_attempts')

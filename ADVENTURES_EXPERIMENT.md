@@ -60,7 +60,8 @@ Break down by `is_logged_in`, `user_plan`, and `source` (landing vs challenge_co
 
 - Story: *The Lost Crystal Dragon* (Minecraft-**inspired**, no official IP)
 - 5 chapters, 250 WPM default, 3 story-choice questions each
-- Anonymous Chapter 1 preview; signup to save progress and unlock Chapter 2+
+- Signup required for Chapter 1; Chapters 1–2 free; Pro for Chapter 3+
+- Chapter 4 (`cave-of-blue-fire`) locks until next calendar day after completing Chapter 3
 
 ## If the experiment succeeds
 

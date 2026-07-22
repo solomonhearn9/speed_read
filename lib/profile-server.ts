@@ -1,9 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
+import {
+  getAccessTierForEntry,
+  mapEntryAccessError,
+  type AccessGateError,
+} from '@/lib/accessTier';
 
 const PAID_PROFILE_FIELDS =
   'plan_status, subscription_status, lifetime_purchase' as const;
+
+/** @deprecated Prefer getAccessTierForEntry — kept for map defaults. */
+export const PRO_SUBSCRIPTION_LEVEL_THRESHOLD = 3;
 
 export async function fetchIsPaidProfile(
   service: SupabaseClient,
@@ -18,11 +26,14 @@ export async function fetchIsPaidProfile(
   return isPaidProfile(profile as Profile | null);
 }
 
-/** First map level/chapter is subscription-only for all users. */
 export function requiresSubscriptionForMapEntry(levelOrChapterNumber: number): boolean {
-  return levelOrChapterNumber === 1;
+  return getAccessTierForEntry(levelOrChapterNumber) === 'subscription';
 }
 
+/**
+ * @deprecated Use mapEntryAccessError with isLoggedIn for signup vs subscription.
+ * Kept for call sites that only check paid status after auth.
+ */
 export function mapEntrySubscriptionError(
   levelOrChapterNumber: number,
   isPaid: boolean
@@ -31,4 +42,13 @@ export function mapEntrySubscriptionError(
     return 'subscription_required';
   }
   return null;
+}
+
+export function checkMapEntryAccess(
+  levelOrChapterNumber: number,
+  isLoggedIn: boolean,
+  isPaid: boolean,
+  explicitTier?: string | null
+): AccessGateError | null {
+  return mapEntryAccessError(levelOrChapterNumber, isLoggedIn, isPaid, explicitTier);
 }

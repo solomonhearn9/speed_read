@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 import { countWords, truncateToWordLimit } from '@/lib/wordCount';
 import { incrementAnonSessionCount } from '@/lib/anonSessions';
-import { canStartViralTest, getViralTestAttemptCount, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
+import { canStartViralTest, getViralTestAttemptCount, getViralTestAttemptsRemaining, incrementViralTestAttemptCount, VIRAL_TEST_FREE_LIMIT } from '@/lib/viralTestAttempts';
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
@@ -70,6 +70,8 @@ export default function ContentInput() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit' | 'challenge_limit'>('pricing');
+  const [friendChallenge, setFriendChallenge] = useState<{ wpm: number; comp: number } | null>(null);
+  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isFirstVisitRef = useRef(false);
@@ -125,10 +127,26 @@ export default function ContentInput() {
   }, [refreshUsage, refreshProfile]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const challengeWpm = params.get('challenge');
+    if (challengeWpm) {
+      const wpm = parseInt(challengeWpm, 10);
+      const comp = parseInt(params.get('comp') ?? '0', 10);
+      if (!Number.isNaN(wpm)) {
+        setFriendChallenge({ wpm, comp: Number.isNaN(comp) ? 0 : comp });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const sessionKey = 'speed-reader-landing-tracked';
+    const isReturning = !!localStorage.getItem('speed-reader-visited');
     if (sessionStorage.getItem(sessionKey)) return;
     sessionStorage.setItem(sessionKey, '1');
     trackEvent('landing_page_view');
+    if (isReturning) {
+      trackEvent('app_returned');
+    }
   }, []);
 
   useEffect(() => {
@@ -136,7 +154,8 @@ export default function ContentInput() {
     if (!hasVisited) {
       localStorage.setItem('speed-reader-visited', 'true');
     }
-  }, []);
+    setAttemptsRemaining(getViralTestAttemptsRemaining(usage.isUnlimited));
+  }, [usage.isUnlimited]);
 
   const checkSessionLimit = (): boolean => {
     if (usage.isUnlimited) return true;
@@ -243,6 +262,7 @@ export default function ContentInput() {
     }
 
     incrementViralTestAttemptCount();
+    setAttemptsRemaining(getViralTestAttemptsRemaining(usage.isUnlimited));
     const challengeLevel = getViralTestAttemptCount();
     trackEvent('challenge_started', { challenge_level: challengeLevel });
     trackEvent('viral_test_started', { challenge_level: challengeLevel });
@@ -396,12 +416,29 @@ export default function ContentInput() {
 
       <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 sm:pb-12">
         <section className="max-w-3xl mx-auto pt-6 sm:pt-8 md:pt-10 text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-3 sm:mb-4 leading-tight tracking-tight">
-            How <span className="challenge-hero-accent">fast</span> can you read?
-          </h1>
-          <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
-            Take the 30-second reading challenge and discover your WPM score.
-          </p>
+          {friendChallenge ? (
+            <>
+              <p className="text-challenge-cta text-sm font-semibold uppercase tracking-widest mb-2">
+                Friend challenge
+              </p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 leading-tight tracking-tight text-white">
+                Your friend hit {friendChallenge.wpm} WPM
+                {friendChallenge.comp > 0 ? ` · ${friendChallenge.comp}% comprehension` : ''}
+              </h1>
+              <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+                Can you beat them? Take the 30-second challenge.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-3 sm:mb-4 leading-tight tracking-tight">
+                How <span className="challenge-hero-accent">fast</span> can you read?
+              </h1>
+              <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
+                Take the 30-second reading challenge and discover your WPM score.
+              </p>
+            </>
+          )}
 
           <div className="mt-6 sm:mt-8">
             <button
@@ -410,8 +447,17 @@ export default function ContentInput() {
             >
               Start the 30-Second Challenge
             </button>
-            <p className="mt-3 text-center text-[10px] sm:text-xs challenge-text-muted">
-              Average reader ≈ 200 WPM
+            {!usage.isUnlimited && (
+              <p className="mt-2 text-center text-[10px] sm:text-xs challenge-text-muted">
+                {attemptsRemaining === null
+                  ? `${VIRAL_TEST_FREE_LIMIT} free tries · no account needed`
+                  : attemptsRemaining > 0
+                    ? `${attemptsRemaining} ${attemptsRemaining === 1 ? 'try' : 'tries'} remaining · no account needed`
+                    : 'Free tries used — upgrade for unlimited challenges'}
+              </p>
+            )}
+            <p className="mt-1 text-center text-[10px] sm:text-xs challenge-text-muted">
+              Sign up free → unlock Level 1 training + Chapter 1 adventure
             </p>
             <p className="mt-1.5 text-center text-[10px] sm:text-xs challenge-text-muted leading-relaxed">
               <span className="inline-flex flex-wrap justify-center gap-x-2 gap-y-1.5">

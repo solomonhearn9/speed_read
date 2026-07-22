@@ -2,7 +2,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-import { fetchIsPaidProfile, mapEntrySubscriptionError } from '@/lib/profile-server';
+import { getContinueGate } from '@/lib/accessTier';
+import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 import { getNextLevel, unlockNextLevel, updateProfileXpAndStreak } from '@/lib/training/progress';
 import {
   calculateActualWpm,
@@ -51,14 +52,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'level_not_found' }, { status: 404 });
     }
 
-    if (!user) {
+    const isPaid = user ? await fetchIsPaidProfile(service, user.id) : false;
+    const accessError = checkMapEntryAccess(level.level_number, !!user, isPaid, level.access_tier);
+    if (accessError === 'signup_required') {
       return NextResponse.json({ error: 'auth_required' }, { status: 401 });
     }
-
-    const isPaid = await fetchIsPaidProfile(service, user.id);
-    const subscriptionError = mapEntrySubscriptionError(level.level_number, isPaid);
-    if (subscriptionError) {
-      return NextResponse.json({ error: subscriptionError }, { status: 403 });
+    if (accessError === 'subscription_required') {
+      return NextResponse.json({ error: 'subscription_required' }, { status: 403 });
     }
 
     const { data: questions } = await service
@@ -85,6 +85,44 @@ export async function POST(request: Request) {
     const actualWpm = body.actual_wpm ?? calculateActualWpm(wordsRead, elapsedSeconds);
     const passed = questionsCorrect >= level.min_correct_to_pass;
     const mastered = questionsCorrect === questionsTotal;
+
+    // Anonymous free-tier completion: grade only, no save — cliffhanger signup for next
+    if (!user) {
+      const nextLevel = await getNextLevel(service, level.tier_id, level.level_number);
+      const continueGate = getContinueGate(
+        nextLevel?.level_number ?? null,
+        false,
+        false,
+        nextLevel?.access_tier
+      );
+      const result: AttemptCompleteResult = {
+        attempt_id: '',
+        saved: false,
+        requires_auth: continueGate === 'signup',
+        continue_gate: continueGate,
+        level_id: levelId,
+        level_title: level.title,
+        level_number: level.level_number,
+        target_wpm: targetWpm,
+        actual_wpm: actualWpm,
+        questions_correct: questionsCorrect,
+        questions_total: questionsTotal,
+        comprehension_pct: comprehensionPct,
+        passed,
+        mastered,
+        xp_awarded: 0,
+        is_personal_best: false,
+        next_level_id: nextLevel?.id ?? null,
+        next_level_wpm: nextLevel?.target_wpm ?? null,
+        next_level_title: nextLevel?.title ?? null,
+        next_level_unlocked: false,
+        reader_level: 1,
+        total_xp: 0,
+        reader_level_up: false,
+        current_streak: 0,
+      };
+      return NextResponse.json(result);
+    }
 
     if (body.continue_anyway && attemptId) {
       const { data: existingAttempt } = await service
@@ -115,10 +153,17 @@ export async function POST(request: Request) {
           .eq('id', user.id)
           .single();
 
+        const continueGate = getContinueGate(
+          nextLevel?.level_number ?? null,
+          true,
+          isPaid,
+          nextLevel?.access_tier
+        );
         return NextResponse.json({
           attempt_id: attemptId,
           saved: true,
-          requires_auth: false,
+          requires_auth: continueGate === 'signup',
+          continue_gate: continueGate,
           level_id: levelId,
           level_title: level.title,
           level_number: level.level_number,
@@ -133,7 +178,8 @@ export async function POST(request: Request) {
           is_personal_best: false,
           next_level_id: nextLevel?.id ?? null,
           next_level_wpm: nextLevel?.target_wpm ?? null,
-          next_level_unlocked: !!nextLevel,
+          next_level_title: nextLevel?.title ?? null,
+          next_level_unlocked: !!nextLevel && continueGate === 'none',
           reader_level: profile?.reader_level ?? 1,
           total_xp: profile?.total_xp ?? 0,
           reader_level_up: false,
@@ -258,7 +304,7 @@ export async function POST(request: Request) {
       xpResult.passed
     );
 
-    let nextLevel: { id: string; target_wpm: number } | null = null;
+    let nextLevel: Awaited<ReturnType<typeof getNextLevel>> = null;
 
     if (xpResult.passed) {
       nextLevel = await unlockNextLevel(
@@ -283,10 +329,25 @@ export async function POST(request: Request) {
       }
     }
 
+    const continueGate = getContinueGate(
+      nextLevel?.level_number ?? (xpResult.passed || body.continue_anyway
+        ? level.level_number + 1
+        : null),
+      true,
+      isPaid,
+      nextLevel?.access_tier
+    );
+
+    // Don't unlock subscription-gated next for unpaid users
+    if (continueGate === 'subscription' && nextLevel) {
+      nextLevel = await getNextLevel(service, level.tier_id, level.level_number);
+    }
+
     const result: AttemptCompleteResult = {
       attempt_id: savedAttemptId ?? '',
       saved: true,
-      requires_auth: false,
+      requires_auth: continueGate === 'signup',
+      continue_gate: continueGate,
       level_id: levelId,
       level_title: level.title,
       level_number: level.level_number,
@@ -299,9 +360,10 @@ export async function POST(request: Request) {
       mastered: xpResult.mastered,
       xp_awarded: xpResult.xp,
       is_personal_best: isPersonalBest,
-      next_level_id: nextLevel?.id ?? null,
+      next_level_id: continueGate === 'none' ? nextLevel?.id ?? null : nextLevel?.id ?? null,
       next_level_wpm: nextLevel?.target_wpm ?? null,
-      next_level_unlocked: !!nextLevel,
+      next_level_title: nextLevel?.title ?? null,
+      next_level_unlocked: !!nextLevel && continueGate === 'none',
       reader_level: profileUpdate.reader_level,
       total_xp: profileUpdate.total_xp,
       reader_level_up: profileUpdate.readerLevelUp,

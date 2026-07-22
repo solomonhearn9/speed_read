@@ -15,6 +15,7 @@ import TrainingResults from '@/components/training/TrainingResults';
 import XPToast from '@/components/training/XPToast';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
+import { trackEvent } from '@/lib/analytics';
 
 type Phase = 'loading' | 'reader' | 'quiz' | 'results' | 'error';
 
@@ -312,17 +313,37 @@ export default function TrainingLevelPage() {
           result={result}
           onRetry={handleRetry}
           onSignup={() => setShowAuthModal(true)}
+          onSubscribe={() => setShowUpgradeModal(true)}
           onContinueAnyway={
-            result.requires_auth || result.passed
+            result.continue_gate !== 'none' || result.passed
               ? undefined
               : handleContinueAnyway
           }
+        />
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="map_subscription_required"
+          onRequireAuth={() => {
+            setShowUpgradeModal(false);
+            setShowAuthModal(true);
+          }}
+          theme="learning"
         />
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           initialMode="signup"
           theme="learning"
+          onSuccess={() => {
+            trackEvent('signup_complete', { track: 'adult', source: 'cliffhanger' });
+            setShowAuthModal(false);
+            if (result.next_level_id) {
+              window.location.href = `/train/${result.next_level_id}`;
+            } else {
+              window.location.href = '/train';
+            }
+          }}
         />
       </>
     );

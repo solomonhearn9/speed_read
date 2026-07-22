@@ -9,6 +9,7 @@ import {
   setAnalyticsContext,
   setClarityReady,
 } from '@/lib/analytics';
+import { ensureAnonPostHogIdentity, mergeAnonIdentityOnSignup } from '@/lib/analytics/anon-id';
 import {
   identifyPostHogUser,
   initPostHog,
@@ -25,6 +26,7 @@ export default function AnalyticsProvider({ children }: { children: React.ReactN
     captureFirstTouchAttribution();
     initPostHog();
     registerPostHogAttribution();
+    ensureAnonPostHogIdentity();
 
     const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
     if (clarityProjectId) {
@@ -42,6 +44,7 @@ export default function AnalyticsProvider({ children }: { children: React.ReactN
     if (isLoading) return;
 
     if (user && profile) {
+      mergeAnonIdentityOnSignup(user.id);
       const userType = deriveUserType(true, profile.plan_status);
       setAnalyticsContext({
         is_logged_in: true,
