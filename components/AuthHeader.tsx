@@ -67,16 +67,16 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
     : 'text-sm btn-brand rounded-lg px-3 py-1.5';
 
   const loginBtnClass = isChallenge
-    ? 'text-xs sm:text-sm text-white hover:text-brand-cyan transition-colors whitespace-nowrap'
+    ? 'text-xs sm:text-sm text-white hover:text-accent-red transition-colors whitespace-nowrap'
     : 'text-sm text-content-secondary hover:text-brand transition-colors';
 
   const navLinkClass = (href: string) => {
     const active = pathname === href;
     return `text-sm transition-colors ${
       active
-        ? 'text-brand-cyan'
+        ? 'text-accent-red'
         : isChallenge
-          ? 'text-white hover:text-brand-cyan'
+          ? 'text-white hover:text-accent-red'
           : 'text-content-secondary hover:text-brand'
     }`;
   };
@@ -87,7 +87,7 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
     <button
       type="button"
       onClick={() => setShowMobileNav((open) => !open)}
-      className="lg:hidden inline-flex items-center justify-center rounded-lg p-2 text-white hover:text-brand-cyan transition-colors shrink-0"
+      className="lg:hidden inline-flex items-center justify-center rounded-lg p-2 text-white hover:text-accent-red transition-colors shrink-0"
       aria-expanded={showMobileNav}
       aria-label={showMobileNav ? 'Close menu' : 'Open menu'}
     >
@@ -113,10 +113,10 @@ export default function AuthHeader({ theme = 'challenge' }: AuthHeaderProps) {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <Link href="/" className="shrink-0" onClick={closeMobileNav}>
             <Image
-              src="/Group 1 1.png"
+              src="/logo1.png"
               alt="SpeedRead"
-              width={906}
-              height={247}
+              width={1809}
+              height={452}
               className="h-8 w-auto sm:h-10 md:h-11 lg:h-12"
               priority
             />

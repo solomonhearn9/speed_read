@@ -44,30 +44,29 @@ function DiamondIcon() {
 
 export default function LandingFeatureCards() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6 w-full">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-5 lg:gap-6 w-full items-stretch">
       <Link
         href="/train"
         onClick={() => trackEvent('training_path_viewed', { source: 'landing' })}
-        className="landing-feature-card landing-feature-card--adult group order-2 md:order-1"
+        className="landing-feature-card landing-feature-card--adult group md:col-span-3"
       >
         <div className="landing-feature-card__bg">
-          <Image src="/adult_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+          <Image src="/adult_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 60vw" />
           <div className="landing-feature-card__overlay landing-feature-card__overlay--adult" />
         </div>
 
-        <div className="landing-feature-card__content">
-          <div className="landing-feature-card__icon-ring landing-feature-card__icon-ring--adult">
-            <Image src="/adult_icon.png" alt="" width={48} height={48} className="rounded-full" />
-          </div>
+        <div className="landing-feature-card__content landing-feature-card__content--adult">
+          {/* Product art crop placeholder — replace with generated asset crop when available */}
+          <div className="landing-feature-card__rule landing-feature-card__rule--adult" aria-hidden="true" />
 
-          <h3 className="text-xl md:text-2xl font-bold text-white leading-tight">
+          <h3 className="font-display text-xl md:text-2xl lg:text-3xl font-semibold text-white leading-tight">
             Become a Better Reader
           </h3>
-          <p className="mt-2 text-sm text-slate-200/90 leading-relaxed">
+          <p className="mt-2 text-sm md:text-base text-content-muted leading-relaxed">
             Build speed and comprehension with structured training.
           </p>
 
-          <ul className="mt-4 space-y-2.5 text-sm text-slate-100">
+          <ul className="mt-4 space-y-2.5 text-sm text-white/95">
             <li className="flex items-center gap-2.5">
               <span className="landing-feature-card__bullet landing-feature-card__bullet--adult">
                 <CheckIcon />
@@ -84,6 +83,7 @@ export default function LandingFeatureCards() {
               <span className="landing-feature-card__bullet landing-feature-card__bullet--adult">
                 <CheckIcon />
               </span>
+              {/* TODO: rewrite — avoid gamification SaaS phrasing ("Track XP, streaks, and personal bests") */}
               Track XP, streaks, and personal bests
             </li>
           </ul>
@@ -100,39 +100,39 @@ export default function LandingFeatureCards() {
       <Link
         href="/adventures"
         onClick={() => trackEvent('adventures_home_viewed', { source: 'landing' })}
-        className="landing-feature-card landing-feature-card--kids group order-1 md:order-2"
+        className="landing-feature-card landing-feature-card--kids group md:col-span-2"
       >
         <div className="landing-feature-card__bg">
-          <Image src="/kids_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+          <Image src="/kids_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 40vw" />
           <div className="landing-feature-card__overlay landing-feature-card__overlay--kids" />
         </div>
 
-        <div className="landing-feature-card__content">
-          <div className="landing-feature-card__icon-ring landing-feature-card__icon-ring--kids">
-            <Image src="/kids_icon.png" alt="" width={48} height={48} className="rounded-full" />
-          </div>
+        <div className="landing-feature-card__content landing-feature-card__content--kids">
+          {/* Product art crop placeholder — replace with generated asset crop when available */}
+          <div className="landing-feature-card__rule landing-feature-card__rule--kids" aria-hidden="true" />
 
-          <h3 className="text-xl md:text-2xl font-bold text-white leading-tight">
+          <h3 className="font-display text-lg md:text-xl font-semibold text-white leading-tight">
             Reading Adventures
           </h3>
-          <p className="mt-2 text-sm text-slate-200/90 leading-relaxed">
+          <p className="mt-2 text-sm text-content-muted leading-relaxed">
             Dive into story quests, make choices, and unlock new chapters.
           </p>
 
-          <ul className="mt-4 space-y-2.5 text-sm text-slate-100">
-            <li className="flex items-center gap-2.5">
+          <ul className="mt-3 space-y-2 text-sm text-white/90">
+            <li className="flex items-center gap-2">
               <span className="landing-feature-card__bullet landing-feature-card__bullet--kids">
                 <BookIcon />
               </span>
               Engaging story quests
             </li>
-            <li className="flex items-center gap-2.5">
+            <li className="flex items-center gap-2">
               <span className="landing-feature-card__bullet landing-feature-card__bullet--kids">
                 <StarIcon />
               </span>
+              {/* TODO: rewrite — avoid generic reward phrasing ("Earn rewards and collect clues") */}
               Earn rewards and collect clues
             </li>
-            <li className="flex items-center gap-2.5">
+            <li className="flex items-center gap-2">
               <span className="landing-feature-card__bullet landing-feature-card__bullet--kids">
                 <DiamondIcon />
               </span>
@@ -140,7 +140,7 @@ export default function LandingFeatureCards() {
             </li>
           </ul>
 
-          <div className="min-h-6 sm:min-h-8 flex-1" aria-hidden="true" />
+          <div className="min-h-4 sm:min-h-6 flex-1" aria-hidden="true" />
 
           <span className="landing-feature-card__cta landing-feature-card__cta--kids">
             Start an Adventure

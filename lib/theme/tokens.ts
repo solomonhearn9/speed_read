@@ -5,42 +5,51 @@
 
 export const colors = {
   background: {
-    primary: '#F8FAFC',
-    secondary: '#EEF6FF',
-    card: '#FFFFFF',
-    elevated: '#F8FBFF',
-  },
-  border: {
-    default: '#DCE7F5',
+    primary: '#0B0B0D',
+    surface: '#17171B',
+    surfaceAlt: '#1E1E23',
   },
   text: {
-    primary: '#0F172A',
-    secondary: '#475569',
-    muted: '#64748B',
-    disabled: '#94A3B8',
+    primary: '#F5F5F4',
+    muted: '#9B9BA3',
   },
+  accent: {
+    red: '#FF4438',
+    redDim: '#3A1210',
+  },
+  secondary: {
+    steel: '#5B6472',
+  },
+  /** @deprecated Prefer accent.red — kept for gradual migration */
   brand: {
-    primary: '#2563EB',
-    primaryHover: '#1D4ED8',
-    cyan: '#38BDF8',
+    primary: '#FF4438',
+    primaryHover: '#E53A2F',
+    cyan: '#FF4438',
   },
   semantic: {
     success: '#22C55E',
-    warning: '#F59E0B',
-    error: '#EF4444',
+    warning: '#EAB308',
+    error: '#FF4438',
   },
   challenge: {
-    cta: '#EF4444',
-    ctaHover: '#DC2626',
-    bgStart: '#07111F',
-    bgEnd: '#0B172A',
-    glow: 'rgba(56, 189, 248, 0.12)',
+    cta: '#FF4438',
+    ctaHover: '#E53A2F',
+    ctaText: '#0B0B0D',
+    bgStart: '#0B0B0D',
+    bgEnd: '#17171B',
+    glow: 'rgba(255, 68, 56, 0.12)',
   },
   reader: {
-    bg: '#0B1220',
-    surface: 'rgba(11, 18, 32, 0.92)',
-    border: '#1E293B',
-    pivot: '#60A5FA',
+    bg: '#0B0B0D',
+    surface: 'rgba(23, 23, 27, 0.92)',
+    border: '#1E1E23',
+    pivot: '#FF4438',
+  },
+  wpmTier: {
+    t300: '#8A8580',
+    t500: '#C4A574',
+    t700: '#E8A87C',
+    t900: '#FF4438',
   },
 } as const;
 
@@ -60,10 +69,10 @@ export const radius = {
 } as const;
 
 export const shadows = {
-  card: '0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)',
-  cardHover: '0 4px 12px rgba(37, 99, 235, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)',
-  elevated: '0 8px 24px rgba(15, 23, 42, 0.08)',
-  badge: '0 2px 8px rgba(37, 99, 235, 0.15)',
+  card: '0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12)',
+  cardHover: '0 4px 12px rgba(255, 68, 56, 0.12), 0 2px 4px rgba(0, 0, 0, 0.12)',
+  elevated: '0 8px 24px rgba(0, 0, 0, 0.28)',
+  badge: '0 2px 8px rgba(255, 68, 56, 0.2)',
 } as const;
 
 export type ThemeVariant = 'base' | 'adult' | 'kids' | 'challenge' | 'reader';

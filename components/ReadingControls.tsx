@@ -2,6 +2,7 @@
 
 import { useReadingStore } from '@/lib/store';
 import { VIRAL_TEST_DURATION_SEC } from '@/lib/viralTest';
+import { getWpmTierColor } from '@/lib/theme/wpmColors';
 
 interface ReadingControlsProps {
   viralSecondsRemaining?: number;
@@ -47,13 +48,20 @@ export default function ReadingControls({ viralSecondsRemaining, viralElapsedMs 
         {isViralTest ? (
           <>
             <span className="challenge-text-muted font-normal text-xs mr-2">Speed</span>
-            <span key={speedWPM} className="tabular-nums text-challenge-cta text-xl font-bold">
+            <span
+              key={speedWPM}
+              className="tabular-nums text-xl font-bold transition-colors duration-300"
+              style={{ color: getWpmTierColor(speedWPM) }}
+            >
               {speedWPM} WPM
             </span>
           </>
         ) : (
           <>
-            wpm <span className="tabular-nums">{speedWPM}</span>
+            wpm{' '}
+            <span className="tabular-nums" style={{ color: getWpmTierColor(speedWPM) }}>
+              {speedWPM}
+            </span>
           </>
         )}
       </p>
@@ -159,7 +167,7 @@ export default function ReadingControls({ viralSecondsRemaining, viralElapsedMs 
         <div className="flex justify-center gap-4 mt-4">
           <button
             onClick={() => setViewMode('page')}
-            className="px-4 py-2 text-sm challenge-text-muted hover:text-brand-cyan transition-colors"
+            className="px-4 py-2 text-sm challenge-text-muted hover:text-accent-red transition-colors"
             title="View full text (ESC)"
           >
             Full Text View
@@ -168,7 +176,7 @@ export default function ReadingControls({ viralSecondsRemaining, viralElapsedMs 
             onClick={() => {
               useReadingStore.getState().reset();
             }}
-            className="px-4 py-2 text-sm challenge-text-muted hover:text-brand-cyan transition-colors"
+            className="px-4 py-2 text-sm challenge-text-muted hover:text-accent-red transition-colors"
             title="Load new content"
           >
             New Content

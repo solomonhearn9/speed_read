@@ -2,57 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Base design tokens (shared across all themes) ─── */
+/* ─── Base design tokens (single source of truth) ─── */
 :root {
-  /* Backgrounds */
-  --bg-primary: #F8FAFC;
-  --bg-secondary: #EEF6FF;
-  --bg-card: #FFFFFF;
-  --bg-elevated: #F8FBFF;
+  /* Core palette */
+  --bg-primary: #0B0B0D;
+  --bg-surface: #17171B;
+  --bg-surface-alt: #1E1E23;
+  --accent-red: #FF4438;
+  --accent-red-dim: #3A1210;
+  --accent-red-hover: #E53A2F;
+  --text-primary: #F5F5F4;
+  --text-muted: #9B9BA3;
+  --secondary-steel: #5B6472;
 
-  /* Borders */
-  --border-default: #DCE7F5;
+  /* Aliases used by existing surfaces */
+  --bg-secondary: var(--bg-surface);
+  --bg-card: var(--bg-surface);
+  --bg-elevated: var(--bg-surface-alt);
+  --border-default: var(--bg-surface-alt);
+  --text-secondary: var(--text-muted);
+  --text-disabled: #6B6B73;
 
-  /* Text */
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #64748B;
-  --text-disabled: #94A3B8;
-
-  /* Brand */
-  --brand-primary: #2563EB;
-  --brand-primary-hover: #1D4ED8;
-  --brand-cyan: #38BDF8;
+  /* Brand → accent-red (no blue primary accent) */
+  --brand-primary: var(--accent-red);
+  --brand-primary-hover: var(--accent-red-hover);
+  --brand-cyan: var(--accent-red);
 
   /* Semantic */
   --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-warning: #EAB308;
+  --color-error: var(--accent-red);
 
-  /* Challenge (acquisition funnel only) */
-  --challenge-cta: #38BDF8;
-  --challenge-cta-hover: #0EA5E9;
-  --challenge-cta-text: #0B172A;
-  --challenge-bg-start: #07111F;
-  --challenge-bg-end: #0B172A;
-  --challenge-glow: rgba(56, 189, 248, 0.12);
-  --challenge-text: #F1F5F9;
-  --challenge-text-muted: #94A3B8;
-  --challenge-surface: rgba(11, 23, 40, 0.72);
-  --challenge-surface-solid: #0F1D35;
-  --challenge-border: rgba(56, 189, 248, 0.14);
-  --challenge-border-strong: rgba(56, 189, 248, 0.28);
-  --challenge-input-bg: rgba(7, 17, 31, 0.55);
-  --challenge-panel: rgba(7, 17, 31, 0.94);
+  /* WPM tier colors — warm ladder; brand red reserved for 900+ */
+  --wpm-tier-300: #8A8580;
+  --wpm-tier-500: #C4A574;
+  --wpm-tier-700: #E8A87C;
+  --wpm-tier-900: var(--accent-red);
+
+  /* Challenge (acquisition funnel) */
+  --challenge-cta: var(--accent-red);
+  --challenge-cta-hover: var(--accent-red-hover);
+  --challenge-cta-text: var(--bg-primary);
+  --challenge-bg-start: var(--bg-primary);
+  --challenge-bg-end: var(--bg-surface);
+  --challenge-glow: rgba(255, 68, 56, 0.12);
+  --challenge-text: var(--text-primary);
+  --challenge-text-muted: var(--text-muted);
+  --challenge-surface: rgba(23, 23, 27, 0.72);
+  --challenge-surface-solid: var(--bg-surface);
+  --challenge-border: rgba(255, 68, 56, 0.18);
+  --challenge-border-strong: rgba(255, 68, 56, 0.36);
+  --challenge-input-bg: rgba(11, 11, 13, 0.55);
+  --challenge-panel: rgba(11, 11, 13, 0.94);
 
   /* Reader (focused dark reading mode) */
-  --reader-bg: #0B1220;
-  --reader-surface: rgba(11, 18, 32, 0.92);
-  --reader-border: #1E293B;
-  --reader-text: #FFFFFF;
-  --reader-text-muted: #64748B;
-  --reader-accent: #2563EB;
-  --reader-pivot: #60A5FA;
+  --reader-bg: var(--bg-primary);
+  --reader-surface: rgba(23, 23, 27, 0.92);
+  --reader-border: var(--bg-surface-alt);
+  --reader-text: var(--text-primary);
+  --reader-text-muted: var(--text-muted);
+  --reader-accent: var(--accent-red);
+  --reader-pivot: var(--accent-red);
 
   /* Spacing */
   --section-gap: 2.5rem;
@@ -65,10 +75,10 @@
   --radius-xl: 1.25rem;
 
   /* Shadows */
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 4px 12px rgba(37, 99, 235, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
-  --shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --shadow-badge: 0 2px 8px rgba(37, 99, 235, 0.15);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-card-hover: 0 4px 12px rgba(255, 68, 56, 0.12), 0 2px 4px rgba(0, 0, 0, 0.12);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-badge: 0 2px 8px rgba(255, 68, 56, 0.2);
 }
 
 /* ─── Adult / Learning theme (training path, quiz, results) ─── */
@@ -89,22 +99,21 @@
   background-color: var(--reader-bg);
 }
 
-/* ─── Future kids theme layer (placeholder — swap backgrounds/rewards only) ─── */
+/* ─── Kids theme — steel secondary path, not green/blue ─── */
 [data-theme='kids'] {
-  --bg-primary: #FFF8F0;
-  --bg-secondary: #FFF0E0;
-  --brand-primary: #7C3AED;
-  --brand-primary-hover: #6D28D9;
+  --brand-primary: var(--secondary-steel);
+  --brand-primary-hover: #4A5260;
 }
 
 html {
   overflow-x: hidden;
-  background-color: var(--challenge-bg-start);
+  background-color: var(--bg-primary);
 }
 
 body {
-  @apply antialiased min-h-screen overflow-x-hidden;
-  background-color: var(--challenge-bg-start);
+  @apply antialiased min-h-screen overflow-x-hidden font-sans;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* Custom scrollbar — adapts to theme */
@@ -112,24 +121,11 @@ body {
   width: 8px;
 }
 
-[data-theme='learning'] ::-webkit-scrollbar-track,
-:root:not([data-theme]) ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-[data-theme='learning'] ::-webkit-scrollbar-thumb,
-:root:not([data-theme]) ::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: 4px;
-}
-
-[data-theme='challenge'] ::-webkit-scrollbar-track,
-[data-theme='reader'] ::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.04);
 }
 
-[data-theme='challenge'] ::-webkit-scrollbar-thumb,
-[data-theme='reader'] ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
@@ -149,7 +145,7 @@ body {
 
   .surface-card-interactive:hover {
     box-shadow: var(--shadow-card-hover);
-    border-color: var(--brand-primary);
+    border-color: var(--accent-red);
   }
 
   .surface-elevated {
@@ -161,16 +157,16 @@ body {
 
   .btn-brand {
     @apply font-medium rounded-lg transition-colors;
-    background-color: var(--brand-primary);
-    color: white;
+    background-color: var(--accent-red);
+    color: var(--bg-primary);
   }
 
   .btn-brand:hover {
-    background-color: var(--brand-primary-hover);
+    background-color: var(--accent-red-hover);
   }
 
   .btn-challenge {
-    @apply font-semibold rounded-lg transition-colors;
+    @apply font-semibold rounded-full transition-colors;
     background-color: var(--challenge-cta);
     color: var(--challenge-cta-text);
   }
@@ -180,13 +176,19 @@ body {
   }
 
   .text-page-title {
-    @apply font-extrabold tracking-tight;
+    @apply font-display font-semibold tracking-tight;
     color: var(--text-primary);
+    font-variation-settings: 'SOFT' 50, 'opsz' 72;
   }
 
   .text-section-title {
-    @apply font-bold tracking-tight;
+    @apply font-display font-semibold tracking-tight;
     color: var(--text-primary);
+    font-variation-settings: 'SOFT' 40, 'opsz' 48;
+  }
+
+  .font-display {
+    font-variation-settings: 'SOFT' 50, 'opsz' 72;
   }
 
   /* ─── Challenge funnel surfaces ─── */
@@ -211,8 +213,8 @@ body {
   .challenge-glow {
     background: radial-gradient(
       ellipse 80% 60% at 50% 40%,
-      rgba(56, 189, 248, 0.14) 0%,
-      rgba(37, 99, 235, 0.06) 40%,
+      rgba(255, 68, 56, 0.14) 0%,
+      rgba(58, 18, 16, 0.35) 40%,
       transparent 72%
     );
   }
@@ -244,7 +246,7 @@ body {
 
   .challenge-input:focus {
     border-color: var(--challenge-border-strong);
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
+    box-shadow: 0 0 0 3px rgba(255, 68, 56, 0.12);
   }
 
   .challenge-panel {
@@ -257,7 +259,7 @@ body {
   .challenge-btn-secondary {
     @apply font-medium rounded-lg transition-colors;
     background: var(--challenge-surface);
-    border: 1px solid rgba(148, 163, 184, 0.18);
+    border: 1px solid rgba(155, 155, 163, 0.18);
     color: var(--challenge-text);
   }
 
@@ -271,7 +273,7 @@ body {
   }
 
   .challenge-hero-accent {
-    background: linear-gradient(135deg, #BAE6FD 0%, #38BDF8 50%, #2563EB 100%);
+    background: linear-gradient(135deg, #FF7A70 0%, var(--accent-red) 55%, #C23028 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -279,12 +281,12 @@ body {
   }
 
   .btn-signup-gradient {
-    background: linear-gradient(90deg, #38BDF8 0%, #2563EB 100%);
-    color: white;
+    background: var(--accent-red);
+    color: var(--bg-primary);
   }
 
   .landing-feature-card {
-    @apply relative block overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[320px] lg:min-h-[360px] transition-transform duration-200;
+    @apply relative block overflow-hidden rounded-2xl transition-transform duration-200;
   }
 
   .landing-feature-card:hover {
@@ -292,13 +294,39 @@ body {
   }
 
   .landing-feature-card--adult {
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    box-shadow: 0 0 24px rgba(37, 99, 235, 0.12);
+    min-height: 300px;
+    border: 1px solid rgba(255, 68, 56, 0.35);
+    box-shadow: 0 0 28px rgba(255, 68, 56, 0.1);
+  }
+
+  @media (min-width: 640px) {
+    .landing-feature-card--adult {
+      min-height: 340px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .landing-feature-card--adult {
+      min-height: 380px;
+    }
   }
 
   .landing-feature-card--kids {
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    box-shadow: 0 0 24px rgba(16, 185, 129, 0.1);
+    min-height: 240px;
+    border: 1px solid rgba(91, 100, 114, 0.45);
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (min-width: 640px) {
+    .landing-feature-card--kids {
+      min-height: 280px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .landing-feature-card--kids {
+      min-height: 300px;
+    }
   }
 
   .landing-feature-card__bg {
@@ -312,40 +340,48 @@ body {
   .landing-feature-card__overlay--adult {
     background: linear-gradient(
       105deg,
-      rgba(7, 17, 31, 0.92) 0%,
-      rgba(7, 17, 31, 0.78) 45%,
-      rgba(7, 17, 31, 0.35) 100%
+      rgba(11, 11, 13, 0.94) 0%,
+      rgba(11, 11, 13, 0.78) 45%,
+      rgba(11, 11, 13, 0.35) 100%
     );
   }
 
   .landing-feature-card__overlay--kids {
     background: linear-gradient(
       105deg,
-      rgba(7, 17, 31, 0.92) 0%,
-      rgba(7, 17, 31, 0.75) 45%,
-      rgba(7, 17, 31, 0.3) 100%
+      rgba(11, 11, 13, 0.94) 0%,
+      rgba(11, 11, 13, 0.8) 45%,
+      rgba(11, 11, 13, 0.4) 100%
     );
   }
 
   .landing-feature-card__content {
-    @apply relative z-10 flex flex-col h-full p-4 sm:p-5 md:p-6;
+    @apply relative z-10 flex flex-col h-full;
     min-height: inherit;
   }
 
-  .landing-feature-card__icon-ring {
-    @apply inline-flex items-center justify-center rounded-full mb-4;
-    width: 3.5rem;
-    height: 3.5rem;
+  .landing-feature-card__content--adult {
+    @apply p-5 sm:p-6 md:p-8;
   }
 
-  .landing-feature-card__icon-ring--adult {
-    background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(37, 99, 235, 0.15) 70%);
-    box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+  .landing-feature-card__content--kids {
+    @apply p-4 sm:p-5;
   }
 
-  .landing-feature-card__icon-ring--kids {
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(6, 182, 212, 0.12) 70%);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  .landing-feature-card__rule {
+    width: 2.5rem;
+    height: 2px;
+    margin-bottom: 1rem;
+    border-radius: 1px;
+  }
+
+  .landing-feature-card__rule--adult {
+    background: var(--accent-red);
+  }
+
+  .landing-feature-card__rule--kids {
+    background: var(--secondary-steel);
+    width: 1.75rem;
   }
 
   .landing-feature-card__bullet {
@@ -355,31 +391,47 @@ body {
   }
 
   .landing-feature-card__bullet--adult {
-    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
-    color: white;
+    background: var(--accent-red);
+    color: var(--text-primary);
   }
 
   .landing-feature-card__bullet--kids {
-    color: #34d399;
+    color: var(--secondary-steel);
   }
 
   .landing-feature-card__cta {
-    @apply inline-flex items-center justify-center gap-1.5 w-full font-semibold rounded-full py-3 text-sm md:text-base transition-opacity shrink-0;
+    @apply inline-flex items-center justify-center gap-1.5 font-semibold rounded-full transition-opacity shrink-0;
   }
 
   .landing-feature-card__cta--adult {
-    background: linear-gradient(180deg, #ffffff 0%, #e0f2fe 100%);
-    color: #2563EB;
+    @apply w-full py-3.5 text-sm md:text-base;
+    background: var(--accent-red);
+    color: var(--bg-primary);
   }
 
   .landing-feature-card__cta--kids {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
+    @apply w-auto self-start px-4 py-2 text-xs md:text-sm;
+    background: var(--secondary-steel);
+    color: var(--text-primary);
   }
 
   .group:hover .landing-feature-card__cta--adult,
   .group:hover .landing-feature-card__cta--kids {
     opacity: 0.92;
+  }
+
+  .hero-rsvp {
+    @apply relative w-full max-w-xl mx-auto overflow-hidden rounded-xl;
+    height: 6.25rem;
+    background: var(--bg-surface);
+    border: 1px solid rgba(255, 68, 56, 0.2);
+    box-shadow: inset 0 0 40px rgba(255, 68, 56, 0.04);
+  }
+
+  @media (min-width: 640px) {
+    .hero-rsvp {
+      height: 7.25rem;
+    }
   }
 
   .scrollbar-none {
@@ -396,7 +448,7 @@ body {
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(56, 189, 248, 0.2) 50%,
+      rgba(255, 68, 56, 0.22) 50%,
       transparent
     );
   }

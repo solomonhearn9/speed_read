@@ -43,7 +43,7 @@ function authStyles(theme: ModalTheme) {
       : 'w-full px-4 py-2 text-sm challenge-text-muted hover:text-white disabled:opacity-50 transition-colors',
     link: learning
       ? 'text-brand hover:text-brand-hover disabled:opacity-50'
-      : 'text-brand-cyan hover:text-white disabled:opacity-50',
+      : 'text-accent-red hover:text-white disabled:opacity-50',
     footer: learning ? 'text-content-muted' : 'challenge-text-muted',
   };
 }

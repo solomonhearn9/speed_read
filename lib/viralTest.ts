@@ -26,7 +26,7 @@ export function getViralTestWpmAtElapsedMs(elapsedMs: number): number {
 }
 
 export const VIRAL_TEST_TEXT = `${VIRAL_TEST_MARKER}
-Your brain can read faster than you think. This is a thirty second speed reading challenge. Focus on the blue letter in each word and let your peripheral vision handle the rest.
+Your brain can read faster than you think. This is a thirty second speed reading challenge. Focus on the red letter in each word and let your peripheral vision handle the rest.
 
 Most adults read about two hundred words per minute. Speed readers often double that by quieting the voice in their head and keeping their eyes still instead of jumping across the page.
 
@@ -149,7 +149,7 @@ export const VIRAL_TEST_QUIZ_QUESTIONS: ViralTestQuizQuestion[] = [
     prompt: 'What should you focus on in each word during the challenge?',
     options: [
       'The first letter only',
-      'The blue letter (Optimal Recognition Point)',
+      'The red letter (Optimal Recognition Point)',
       'The last letter only',
       'The word length',
     ],

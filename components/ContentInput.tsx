@@ -7,14 +7,16 @@ import { useAuth } from '@/lib/auth-context';
 import { trackEvent } from '@/lib/analytics';
 import { countWords, truncateToWordLimit } from '@/lib/wordCount';
 import { incrementAnonSessionCount } from '@/lib/anonSessions';
-import { canStartViralTest, getViralTestAttemptCount, getViralTestAttemptsRemaining, incrementViralTestAttemptCount, VIRAL_TEST_FREE_LIMIT } from '@/lib/viralTestAttempts';
+import { canStartViralTest, getViralTestAttemptCount, incrementViralTestAttemptCount } from '@/lib/viralTestAttempts';
 import { isPaidProfile } from '@/lib/plans';
 import type { Profile } from '@/lib/types';
 import AuthHeader from './AuthHeader';
 import LandingFeatureCards from './LandingFeatureCards';
+import HeroRsvpDemo from './HeroRsvpDemo';
 import WordLimitBanner from './WordLimitBanner';
 import AuthModal from './AuthModal';
 import UpgradeModal from './UpgradeModal';
+import { WPM_TIER_THRESHOLDS } from '@/lib/theme/wpmColors';
 
 const DEMO_TEXT = `Let's see if you can keep up with this Speed Reading exercise. We'll kick things off at 300 WPM. The average person reads 200 to 240 words per minute, so let's see if you can beat that.
 The main trick with this kind of speed reading is quieting the voice in your head. This voice reads every single word out loud. That's the main habit that slows us all down. It's like taking training wheels off a bike. At first it feels strange, but soon you find your balance.
@@ -62,6 +64,7 @@ export default function ContentInput() {
   const { usage, user, refreshUsage, refreshProfile } = useAuth();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [inputMethod, setInputMethod] = useState<'text' | 'file' | 'url'>('text');
+  const [showCustomText, setShowCustomText] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +74,6 @@ export default function ContentInput() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'pricing' | 'upload' | 'url' | 'word_limit' | 'session_limit' | 'challenge_limit'>('pricing');
   const [friendChallenge, setFriendChallenge] = useState<{ wpm: number; comp: number } | null>(null);
-  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isFirstVisitRef = useRef(false);
@@ -154,8 +156,7 @@ export default function ContentInput() {
     if (!hasVisited) {
       localStorage.setItem('speed-reader-visited', 'true');
     }
-    setAttemptsRemaining(getViralTestAttemptsRemaining(usage.isUnlimited));
-  }, [usage.isUnlimited]);
+  }, []);
 
   const checkSessionLimit = (): boolean => {
     if (usage.isUnlimited) return true;
@@ -262,7 +263,6 @@ export default function ContentInput() {
     }
 
     incrementViralTestAttemptCount();
-    setAttemptsRemaining(getViralTestAttemptsRemaining(usage.isUnlimited));
     const challengeLevel = getViralTestAttemptCount();
     trackEvent('challenge_started', { challenge_level: challengeLevel });
     trackEvent('viral_test_started', { challenge_level: challengeLevel });
@@ -421,53 +421,54 @@ export default function ContentInput() {
               <p className="text-challenge-cta text-sm font-semibold uppercase tracking-widest mb-2">
                 Friend challenge
               </p>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 leading-tight tracking-tight text-white">
+              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold mb-3 leading-tight tracking-tight text-white">
                 Your friend hit {friendChallenge.wpm} WPM
                 {friendChallenge.comp > 0 ? ` · ${friendChallenge.comp}% comprehension` : ''}
               </h1>
-              <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+              <p className="challenge-text-muted text-sm sm:text-base max-w-2xl mx-auto mb-5 sm:mb-6">
                 Can you beat them? Take the 30-second challenge.
               </p>
             </>
           ) : (
             <>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-3 sm:mb-4 leading-tight tracking-tight">
+              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold mb-4 sm:mb-5 leading-tight tracking-tight">
                 How <span className="challenge-hero-accent">fast</span> can you read?
               </h1>
-              <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
-                Take the 30-second reading challenge and discover your WPM score.
-              </p>
             </>
           )}
 
-          <div className="mt-6 sm:mt-8">
+          <div className="mb-6 sm:mb-8">
+            <HeroRsvpDemo />
+          </div>
+
+          <div>
             <button
               onClick={handleViralTest}
               className="w-full max-w-xl mx-auto px-6 py-3.5 sm:py-4 btn-challenge text-base md:text-lg"
             >
               Start the 30-Second Challenge
             </button>
-            {!usage.isUnlimited && (
-              <p className="mt-2 text-center text-[10px] sm:text-xs challenge-text-muted">
-                {attemptsRemaining === null
-                  ? `${VIRAL_TEST_FREE_LIMIT} free tries · no account needed`
-                  : attemptsRemaining > 0
-                    ? `${attemptsRemaining} ${attemptsRemaining === 1 ? 'try' : 'tries'} remaining · no account needed`
-                    : 'Free tries used — upgrade for unlimited challenges'}
-              </p>
-            )}
-            <p className="mt-1 text-center text-[10px] sm:text-xs challenge-text-muted">
+            <p className="mt-2 text-center text-[10px] sm:text-xs challenge-text-muted">
               Sign up free → unlock Level 1 training + Chapter 1 adventure
             </p>
-            <p className="mt-1.5 text-center text-[10px] sm:text-xs challenge-text-muted leading-relaxed">
-              <span className="inline-flex flex-wrap justify-center gap-x-2 gap-y-1.5">
-                <span>🟢 300 WPM</span>
-                <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
-                <span>🟡 500 WPM</span>
-                <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
-                <span>🔴 700 WPM</span>
-                <span className="text-slate-600 hidden sm:inline" aria-hidden="true">•</span>
-                <span>⚫ 900+ WPM</span>
+            <p
+              className="mt-2 text-center text-[10px] sm:text-xs challenge-text-muted leading-relaxed"
+              title="These colors match the live WPM counter during the challenge"
+            >
+              <span className="inline-flex flex-wrap justify-center items-center gap-x-2.5 gap-y-1.5">
+                {WPM_TIER_THRESHOLDS.map((tier, i) => (
+                  <span key={tier.label} className="inline-flex items-center gap-1.5">
+                    {i > 0 && (
+                      <span className="text-white/20 hidden sm:inline mr-1" aria-hidden="true">·</span>
+                    )}
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: `var(${tier.cssVar})` }}
+                      aria-hidden="true"
+                    />
+                    <span style={{ color: `var(${tier.cssVar})` }}>{tier.label}</span>
+                  </span>
+                ))}
               </span>
             </p>
           </div>
@@ -477,46 +478,7 @@ export default function ContentInput() {
           <LandingFeatureCards />
         </section>
 
-        <section className="max-w-3xl mx-auto mt-10 sm:mt-12 w-full">
-        <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div className="challenge-divider" />
-          <span className="text-xs sm:text-sm challenge-text-muted whitespace-nowrap">or paste your own text</span>
-          <div className="challenge-divider" />
-        </div>
-
-        <div className="flex gap-1 sm:gap-2 mb-6 border-b border-white/10 overflow-x-auto scrollbar-none">
-          <button
-            onClick={() => handleTabSwitch('text')}
-            className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
-              inputMethod === 'text'
-                ? 'text-white border-b-2 border-challenge-cta'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Paste Text
-          </button>
-          <button
-            onClick={() => handleTabSwitch('file')}
-            className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
-              inputMethod === 'file'
-                ? 'text-white border-b-2 border-challenge-cta'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Upload File
-          </button>
-          <button
-            onClick={() => handleTabSwitch('url')}
-            className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
-              inputMethod === 'url'
-                ? 'text-white border-b-2 border-challenge-cta'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            URL Scrape
-          </button>
-        </div>
-
+        <section className="max-w-3xl mx-auto mt-16 sm:mt-20 md:mt-24 w-full">
         {authNotice && (
           <div className={`mb-4 p-4 rounded-lg text-sm ${
             authNotice.includes('verified')
@@ -533,119 +495,172 @@ export default function ContentInput() {
           </div>
         )}
 
-        {wordLimitMessage && (
-          <WordLimitBanner
-            message={wordLimitMessage}
-            onUpgrade={() => {
-              setUpgradeReason('word_limit');
-              setShowUpgradeModal(true);
-            }}
-          />
-        )}
-
-        {inputMethod === 'text' && (
-          <div>
-            <div className="relative">
-              <textarea
-                ref={textareaRef}
-                value={textInput}
-                onChange={handleTextareaChange}
-                onKeyDown={handleTextareaKeyDown}
-                placeholder="Paste your text here..."
-                className="w-full h-64 challenge-input resize-none select-text"
-                style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-              />
-              {textInput && (
-                <button
-                  onClick={handleClearText}
-                  className="absolute top-2 right-2 px-3 py-1 text-sm challenge-btn-secondary"
-                  title="Clear text"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            {!usage.isUnlimited && (
-              <p className="mt-2 text-xs challenge-text-muted text-center">
-                {usage.tier === 'anonymous'
-                  ? 'Free: paste up to 500 words. Upgrade for unlimited reading, uploads, and URL scraping.'
-                  : 'Free: paste up to 1,500 words. Upgrade for unlimited reading, uploads, and URL scraping.'}
-              </p>
-            )}
+        {!showCustomText ? (
+          <div className="text-center">
             <button
-              onClick={handleTextSubmit}
-              disabled={!textInput.trim()}
-              className="mt-4 w-full px-6 py-3 btn-challenge disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
+              type="button"
+              onClick={() => setShowCustomText(true)}
+              className="text-xs sm:text-sm challenge-text-muted hover:text-white transition-colors underline-offset-4 hover:underline"
             >
-              Start Reading
+              or use your own text
             </button>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="challenge-divider" />
+              <span className="text-xs sm:text-sm challenge-text-muted whitespace-nowrap">use your own text</span>
+              <div className="challenge-divider" />
+            </div>
 
-        {inputMethod === 'file' && (
-          <div>
-            <div className="border-2 border-dashed border-white/10 rounded-xl p-6 sm:p-10 md:p-12 text-center hover:border-brand-cyan/30 transition-colors challenge-surface">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,.doc,.txt"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer flex flex-col items-center"
-                onClick={(e) => {
-                  if (!usage.canUpload) {
-                    e.preventDefault();
-                    trackEvent('upload_gate_viewed');
-                    setUpgradeReason('upload');
-                    setShowUpgradeModal(true);
-                  }
-                }}
+            <div className="flex gap-1 sm:gap-2 mb-6 border-b border-white/10 overflow-x-auto scrollbar-none">
+              <button
+                onClick={() => handleTabSwitch('text')}
+                className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
+                  inputMethod === 'text'
+                    ? 'text-white border-b-2 border-challenge-cta'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                <svg
-                  className="w-16 h-16 text-slate-500 mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                <span className="text-lg font-medium mb-2">
-                  {isLoading ? 'Processing...' : 'Click to upload or drag and drop'}
-                </span>
-                <span className="text-sm challenge-text-muted">
-                  Supports PDF, DOCX, DOC, TXT files — Pro feature
-                </span>
-              </label>
+                Paste Text
+              </button>
+              <button
+                onClick={() => handleTabSwitch('file')}
+                className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
+                  inputMethod === 'file'
+                    ? 'text-white border-b-2 border-challenge-cta'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Upload File
+              </button>
+              <button
+                onClick={() => handleTabSwitch('url')}
+                className={`shrink-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium transition-colors ${
+                  inputMethod === 'url'
+                    ? 'text-white border-b-2 border-challenge-cta'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                URL Scrape
+              </button>
             </div>
-          </div>
-        )}
 
-        {inputMethod === 'url' && (
-          <div>
-            <input
-              type="url"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://example.com/article"
-              className="challenge-input mb-4"
-            />
-            <button
-              onClick={handleURLSubmit}
-              disabled={!urlInput.trim() || isLoading}
-              className="w-full px-6 py-3 btn-challenge disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
-            >
-              {isLoading ? 'Scraping...' : 'Scrape and Read'}
-            </button>
-          </div>
+            {wordLimitMessage && (
+              <WordLimitBanner
+                message={wordLimitMessage}
+                onUpgrade={() => {
+                  setUpgradeReason('word_limit');
+                  setShowUpgradeModal(true);
+                }}
+              />
+            )}
+
+            {inputMethod === 'text' && (
+              <div>
+                <div className="relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={textInput}
+                    onChange={handleTextareaChange}
+                    onKeyDown={handleTextareaKeyDown}
+                    placeholder="Paste your text here..."
+                    className="w-full h-64 challenge-input resize-none select-text"
+                    style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                  />
+                  {textInput && (
+                    <button
+                      onClick={handleClearText}
+                      className="absolute top-2 right-2 px-3 py-1 text-sm challenge-btn-secondary"
+                      title="Clear text"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {!usage.isUnlimited && (
+                  <p className="mt-2 text-xs challenge-text-muted text-center">
+                    {usage.tier === 'anonymous'
+                      ? 'Free: paste up to 500 words. Upgrade for unlimited reading, uploads, and URL scraping.'
+                      : 'Free: paste up to 1,500 words. Upgrade for unlimited reading, uploads, and URL scraping.'}
+                  </p>
+                )}
+                <button
+                  onClick={handleTextSubmit}
+                  disabled={!textInput.trim()}
+                  className="mt-4 w-full px-6 py-3 btn-challenge disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
+                >
+                  Start Reading
+                </button>
+              </div>
+            )}
+
+            {inputMethod === 'file' && (
+              <div>
+                <div className="border-2 border-dashed border-white/10 rounded-xl p-6 sm:p-10 md:p-12 text-center hover:border-accent-red/30 transition-colors challenge-surface">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.doc,.txt"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                    onClick={(e) => {
+                      if (!usage.canUpload) {
+                        e.preventDefault();
+                        trackEvent('upload_gate_viewed');
+                        setUpgradeReason('upload');
+                        setShowUpgradeModal(true);
+                      }
+                    }}
+                  >
+                    <svg
+                      className="w-16 h-16 text-slate-500 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                    <span className="text-lg font-medium mb-2">
+                      {isLoading ? 'Processing...' : 'Click to upload or drag and drop'}
+                    </span>
+                    <span className="text-sm challenge-text-muted">
+                      Supports PDF, DOCX, DOC, TXT files — Pro feature
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {inputMethod === 'url' && (
+              <div>
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder="https://example.com/article"
+                  className="challenge-input mb-4"
+                />
+                <button
+                  onClick={handleURLSubmit}
+                  disabled={!urlInput.trim() || isLoading}
+                  className="w-full px-6 py-3 btn-challenge disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
+                >
+                  {isLoading ? 'Scraping...' : 'Scrape and Read'}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <div className="mt-10 sm:mt-12 p-4 sm:p-6 challenge-surface rounded-xl">

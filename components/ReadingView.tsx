@@ -305,7 +305,7 @@ export default function ReadingView() {
           >
             <button
               onClick={() => reset()}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-brand-cyan transition-colors"
+              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-accent-red transition-colors"
               aria-label="Back to home"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -327,7 +327,7 @@ export default function ReadingView() {
       {!isViral && (
         <button
           onClick={() => reset()}
-          className="fixed top-4 left-4 z-20 flex items-center gap-1.5 text-sm text-slate-400 hover:text-brand-cyan transition-colors"
+          className="fixed top-4 left-4 z-20 flex items-center gap-1.5 text-sm text-slate-400 hover:text-accent-red transition-colors"
           aria-label="Back to home"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

@@ -7,55 +7,67 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-general-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-fraunces)', 'Georgia', 'serif'],
+        serif: ['var(--font-fraunces)', 'Georgia', 'serif'],
+      },
       colors: {
-        /* Legacy alias — challenge pivot only */
-        'anchor-red': '#EF4444',
-        /* Brand */
+        /* Legacy alias — challenge pivot */
+        'anchor-red': 'var(--accent-red)',
+        /* Brand (maps to accent-red) */
         brand: {
-          DEFAULT: '#2563EB',
-          hover: '#1D4ED8',
-          cyan: '#38BDF8',
+          DEFAULT: 'var(--accent-red)',
+          hover: 'var(--accent-red-hover)',
+          cyan: 'var(--accent-red)',
         },
         /* Surfaces */
         surface: {
-          primary: '#F8FAFC',
-          secondary: '#EEF6FF',
-          card: '#FFFFFF',
-          elevated: '#F8FBFF',
+          primary: 'var(--bg-primary)',
+          secondary: 'var(--bg-surface)',
+          card: 'var(--bg-surface)',
+          elevated: 'var(--bg-surface-alt)',
+          alt: 'var(--bg-surface-alt)',
         },
         /* Text */
         content: {
-          primary: '#0F172A',
-          secondary: '#475569',
-          muted: '#64748B',
-          disabled: '#94A3B8',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-muted)',
+          muted: 'var(--text-muted)',
+          disabled: 'var(--text-muted)',
         },
         /* Borders */
         line: {
-          DEFAULT: '#DCE7F5',
+          DEFAULT: 'var(--bg-surface-alt)',
         },
+        /* Accents */
+        accent: {
+          red: 'var(--accent-red)',
+          'red-dim': 'var(--accent-red-dim)',
+        },
+        steel: 'var(--secondary-steel)',
         /* Semantic */
         success: {
           DEFAULT: '#22C55E',
-          light: '#DCFCE7',
+          light: '#14532D',
         },
         warning: {
-          DEFAULT: '#F59E0B',
-          light: '#FEF3C7',
+          DEFAULT: '#EAB308',
+          light: '#422006',
         },
         /* Challenge funnel */
         challenge: {
-          cta: '#38BDF8',
-          'cta-hover': '#0EA5E9',
-          'bg-start': '#07111F',
-          'bg-end': '#0B172A',
+          cta: 'var(--challenge-cta)',
+          'cta-hover': 'var(--challenge-cta-hover)',
+          'bg-start': 'var(--challenge-bg-start)',
+          'bg-end': 'var(--challenge-bg-end)',
         },
         /* Reader */
         reader: {
-          bg: '#0B1220',
-          surface: '#0F1729',
-          border: '#1E293B',
-          pivot: '#60A5FA',
+          bg: 'var(--reader-bg)',
+          surface: 'var(--reader-surface)',
+          border: 'var(--reader-border)',
+          pivot: 'var(--reader-pivot)',
         },
       },
       borderRadius: {
@@ -63,10 +75,10 @@ module.exports = {
         badge: '9999px',
       },
       boxShadow: {
-        card: '0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)',
-        'card-hover': '0 4px 12px rgba(37, 99, 235, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)',
-        elevated: '0 8px 24px rgba(15, 23, 42, 0.08)',
-        badge: '0 2px 8px rgba(37, 99, 235, 0.15)',
+        card: '0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.12)',
+        'card-hover': '0 4px 12px rgba(255, 68, 56, 0.12), 0 2px 4px rgba(0, 0, 0, 0.12)',
+        elevated: '0 8px 24px rgba(0, 0, 0, 0.28)',
+        badge: '0 2px 8px rgba(255, 68, 56, 0.2)',
       },
       spacing: {
         section: '2.5rem',
