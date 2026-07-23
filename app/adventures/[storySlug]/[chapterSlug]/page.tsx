@@ -31,6 +31,10 @@ export default function AdventureChapterPage() {
   const storySlug = params.storySlug as string;
   const chapterSlug = params.chapterSlug as string;
   const { user, profile, refreshProfile } = useAuth();
+  const profileRef = useRef(profile);
+  const userRef = useRef(user);
+  profileRef.current = profile;
+  userRef.current = user;
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [data, setData] = useState<AdventureChapterDetailResponse | null>(null);
@@ -89,7 +93,7 @@ export default function AdventureChapterPage() {
       if (!res.ok) throw new Error('load failed');
       const json: AdventureChapterDetailResponse = await res.json();
       setData(json);
-      trackAdventureEvent('adventure_chapter_viewed', profile, !!user, {
+      trackAdventureEvent('adventure_chapter_viewed', profileRef.current, !!userRef.current, {
         story_id: json.story.id,
         story_slug: storySlug,
         chapter_id: json.chapter.id,
@@ -101,9 +105,10 @@ export default function AdventureChapterPage() {
       setError('Could not load chapter.');
       setPhase('error');
     }
-  }, [storySlug, chapterSlug, profile, user]);
+  }, [storySlug, chapterSlug]);
 
   useEffect(() => {
+    startedRef.current = false;
     void loadChapter();
   }, [loadChapter]);
 
@@ -123,7 +128,7 @@ export default function AdventureChapterPage() {
       if (res.ok) {
         const j = await res.json();
         setAttemptId(j.attempt_id ?? null);
-        trackAdventureEvent('adventure_chapter_started', profile, !!user, {
+        trackAdventureEvent('adventure_chapter_started', profileRef.current, !!userRef.current, {
           story_id: data.story.id,
           story_slug: storySlug,
           chapter_id: data.chapter.id,
@@ -135,7 +140,7 @@ export default function AdventureChapterPage() {
       }
     };
     void start();
-  }, [phase, data, profile, user, storySlug, chapterSlug]);
+  }, [phase, data, storySlug, chapterSlug]);
 
   const submitQuiz = async (answers: Array<{ question_id: string; selected_index: number }>) => {
     if (!data || !readStats) return;

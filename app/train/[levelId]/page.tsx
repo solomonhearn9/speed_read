@@ -28,6 +28,10 @@ export default function TrainingLevelPage() {
   const params = useParams();
   const levelId = params.levelId as string;
   const { user, profile, refreshProfile } = useAuth();
+  const profileRef = useRef(profile);
+  const userRef = useRef(user);
+  profileRef.current = profile;
+  userRef.current = user;
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [levelData, setLevelData] = useState<TrainingLevelDetailResponse | null>(null);
@@ -41,6 +45,8 @@ export default function TrainingLevelPage() {
   const [lastAnswers, setLastAnswers] = useState<Array<{ question_id: string; selected_index: number }>>([]);
   const startedRef = useRef(false);
 
+  // Only reload when levelId changes — not when profile refreshes after quiz (that was
+  // wiping the results screen and restarting the reader).
   const loadLevel = useCallback(async () => {
     setPhase('loading');
     setError(null);
@@ -66,7 +72,7 @@ export default function TrainingLevelPage() {
       if (!res.ok) throw new Error('load_failed');
       const data: TrainingLevelDetailResponse = await res.json();
       setLevelData(data);
-      trackTrainingEvent('training_level_viewed', profile, !!user, {
+      trackTrainingEvent('training_level_viewed', profileRef.current, !!userRef.current, {
         level_id: data.level.id,
         tier_id: data.tier_id,
         passage_id: data.passage.id,
@@ -77,9 +83,10 @@ export default function TrainingLevelPage() {
       setError('Could not load this level.');
       setPhase('error');
     }
-  }, [levelId, profile, user]);
+  }, [levelId]);
 
   useEffect(() => {
+    startedRef.current = false;
     void loadLevel();
   }, [loadLevel]);
 
@@ -96,7 +103,7 @@ export default function TrainingLevelPage() {
       if (res.ok) {
         const data = await res.json();
         setAttemptId(data.attempt_id ?? null);
-        trackTrainingEvent('training_level_started', profile, !!user, {
+        trackTrainingEvent('training_level_started', profileRef.current, !!userRef.current, {
           level_id: levelData.level.id,
           tier_id: levelData.tier_id,
           passage_id: levelData.passage.id,
@@ -107,7 +114,7 @@ export default function TrainingLevelPage() {
       }
     };
     void startAttempt();
-  }, [phase, levelData, levelId, profile, user]);
+  }, [phase, levelData, levelId]);
 
   const handleReadComplete = (stats: ReadStats) => {
     setReadStats(stats);

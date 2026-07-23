@@ -6,6 +6,9 @@ import { processText } from '@/lib/textProcessor';
 import WordDisplay from '@/components/WordDisplay';
 
 const COUNTDOWN_SECONDS = 3;
+const WPM_STEP = 25;
+const MIN_WPM = 100;
+const MAX_WPM = 1000;
 
 interface TrainingReaderProps {
   passageTitle: string;
@@ -14,15 +17,19 @@ interface TrainingReaderProps {
   onComplete: (stats: { wordsRead: number; elapsedSeconds: number }) => void;
 }
 
-function createInitialRefs(passageBody: string, targetWpm: number) {
+function createInitialRefs(passageBody: string, wpm: number) {
   return {
-    processedWords: processText(passageBody, targetWpm),
+    processedWords: processText(passageBody, wpm),
     currentIndex: 0,
     isPlaying: false,
     activeMs: 0,
     completed: false,
     playStart: null as number | null,
   };
+}
+
+function clampWpm(wpm: number) {
+  return Math.min(MAX_WPM, Math.max(MIN_WPM, wpm));
 }
 
 export default function TrainingReader({
@@ -34,8 +41,9 @@ export default function TrainingReader({
   const [sessionId, setSessionId] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(COUNTDOWN_SECONDS);
   const [renderTick, setRenderTick] = useState(0);
+  const [playbackWpm, setPlaybackWpm] = useState(() => clampWpm(targetWpm));
 
-  const refs = useRef(createInitialRefs(passageBody, targetWpm));
+  const refs = useRef(createInitialRefs(passageBody, clampWpm(targetWpm)));
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -44,11 +52,33 @@ export default function TrainingReader({
   const resetSession = useCallback(() => {
     if (intervalRef.current) clearTimeout(intervalRef.current);
     if (countdownRef.current) clearTimeout(countdownRef.current);
-    refs.current = createInitialRefs(passageBody, targetWpm);
+    const wpm = clampWpm(targetWpm);
+    refs.current = createInitialRefs(passageBody, wpm);
+    setPlaybackWpm(wpm);
     setCountdown(COUNTDOWN_SECONDS);
     setSessionId((id) => id + 1);
     bump();
   }, [passageBody, targetWpm, bump]);
+
+  const adjustSpeed = useCallback(
+    (delta: number) => {
+      setPlaybackWpm((prev) => {
+        const next = clampWpm(prev + delta);
+        if (next === prev) return prev;
+        const r = refs.current;
+        const index = r.currentIndex;
+        r.processedWords = processText(passageBody, next);
+        r.currentIndex = Math.min(index, Math.max(0, r.processedWords.length - 1));
+        if (intervalRef.current) {
+          clearTimeout(intervalRef.current);
+          intervalRef.current = null;
+        }
+        bump();
+        return next;
+      });
+    },
+    [passageBody, bump]
+  );
 
   const finish = useCallback(() => {
     const r = refs.current;
@@ -140,11 +170,17 @@ export default function TrainingReader({
       if (e.key === ' ') {
         e.preventDefault();
         togglePlay();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        adjustSpeed(WPM_STEP);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        adjustSpeed(-WPM_STEP);
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [togglePlay]);
+  }, [togglePlay, adjustSpeed]);
 
   const r = refs.current;
   const words = r.processedWords;
@@ -215,11 +251,6 @@ export default function TrainingReader({
         className="fixed bottom-0 left-0 right-0 z-30 bg-reader-surface/90 backdrop-blur-sm border-t border-reader-border px-4 pt-4 md:px-6 md:pb-8"
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
       >
-        <p className="text-center text-xs text-slate-500 mb-3">
-          Target{' '}
-          <span className="text-brand font-semibold tabular-nums">{targetWpm}</span> WPM
-        </p>
-
         <div className="mb-4 max-w-md mx-auto">
           <div className="flex justify-between text-xs md:text-sm text-slate-400 mb-1.5">
             <span>Progress</span>
@@ -235,11 +266,36 @@ export default function TrainingReader({
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => adjustSpeed(-WPM_STEP)}
+            disabled={playbackWpm <= MIN_WPM}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-reader-border bg-reader-bg text-white text-xl font-semibold transition-colors hover:border-brand hover:text-brand disabled:opacity-40 disabled:hover:border-reader-border disabled:hover:text-white"
+            aria-label="Slower"
+          >
+            −
+          </button>
+
+          <div className="min-w-[5.5rem] text-center">
+            <p className="text-xl font-semibold text-brand tabular-nums leading-none">{playbackWpm}</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">WPM</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => adjustSpeed(WPM_STEP)}
+            disabled={playbackWpm >= MAX_WPM}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-reader-border bg-reader-bg text-white text-xl font-semibold transition-colors hover:border-brand hover:text-brand disabled:opacity-40 disabled:hover:border-reader-border disabled:hover:text-white"
+            aria-label="Faster"
+          >
+            +
+          </button>
+
           <button
             onClick={togglePlay}
             disabled={isCountingDown}
-            className="p-4 bg-brand hover:bg-brand-hover disabled:bg-reader-border disabled:opacity-50 text-white rounded-full transition-colors shadow-badge"
+            className="ml-2 p-4 bg-brand hover:bg-brand-hover disabled:bg-reader-border disabled:opacity-50 text-white rounded-full transition-colors shadow-badge"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
