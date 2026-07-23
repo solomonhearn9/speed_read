@@ -11,7 +11,9 @@ import {
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import {
+  ACCOUNT_EXISTS_MESSAGE,
   getAuthRedirectUrl,
+  isDuplicateSignupUser,
   isEmailConfirmed,
   mapAuthError,
   UNVERIFIED_LOGIN_MESSAGE,
@@ -21,7 +23,7 @@ import { getUserTier, getUsageInfo } from '@/lib/plans';
 import { getAnonSessionCount } from '@/lib/anonSessions';
 
 export type SignUpResult =
-  | { error: string; code: 'error' | 'rate_limited' }
+  | { error: string; code: 'error' | 'rate_limited' | 'existing_user' }
   | { error: null; status: 'verification_required' }
   | { error: null; status: 'logged_in' };
 
@@ -188,8 +190,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const mapped = mapAuthError(error);
       return {
         error: mapped.message,
-        code: mapped.isRateLimited ? 'rate_limited' : 'error',
+        code: mapped.isRateLimited
+          ? 'rate_limited'
+          : mapped.isExistingUser
+            ? 'existing_user'
+            : 'error',
       };
+    }
+
+    // Supabase often returns 200 with empty identities when the email is taken
+    if (isDuplicateSignupUser(data.user)) {
+      await supabase.auth.signOut();
+      clearAuthState();
+      return { error: ACCOUNT_EXISTS_MESSAGE, code: 'existing_user' };
     }
 
     if (!data.session) {

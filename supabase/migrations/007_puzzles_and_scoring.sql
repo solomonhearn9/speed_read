@@ -141,8 +141,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_display_name_unique
   WHERE display_name IS NOT NULL;
 
 -- Animal+number default handles (never derived from email)
-CREATE OR REPLACE FUNCTION generate_display_name()
-RETURNS TEXT AS $$
+-- search_path must be set: auth triggers run SECURITY DEFINER with a restricted path
+CREATE OR REPLACE FUNCTION public.generate_display_name()
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   animals TEXT[] := ARRAY[
     'otter', 'falcon', 'lynx', 'heron', 'badger', 'osprey', 'marten', 'kite',
@@ -162,7 +167,9 @@ BEGIN
       || animals[1 + floor(random() * array_length(animals, 1))::int]
       || '-'
       || (100 + floor(random() * 900))::int::text;
-    EXIT WHEN NOT EXISTS (SELECT 1 FROM profiles WHERE display_name = candidate);
+    EXIT WHEN NOT EXISTS (
+      SELECT 1 FROM public.profiles WHERE display_name = candidate
+    );
     attempts := attempts + 1;
     IF attempts > 20 THEN
       candidate := candidate || '-' || substr(md5(random()::text), 1, 4);
@@ -171,22 +178,26 @@ BEGIN
   END LOOP;
   RETURN candidate;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Backfill existing profiles
-UPDATE profiles
-SET display_name = generate_display_name()
+UPDATE public.profiles
+SET display_name = public.generate_display_name()
 WHERE display_name IS NULL;
 
-ALTER TABLE profiles
-  ALTER COLUMN display_name SET DEFAULT generate_display_name();
+ALTER TABLE public.profiles
+  ALTER COLUMN display_name SET DEFAULT public.generate_display_name();
 
 -- Ensure new signups always get a handle, independent of email
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, display_name)
-  VALUES (NEW.id, NEW.email, generate_display_name());
+  VALUES (NEW.id, NEW.email, public.generate_display_name());
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;

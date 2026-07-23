@@ -135,6 +135,12 @@ export default function AuthModal({
         setViewState('rate_limit');
         return;
       }
+      if (result.code === 'existing_user') {
+        setMode('login');
+        setViewState('form');
+        setError(result.error);
+        return;
+      }
       setError(result.error);
       return;
     }
