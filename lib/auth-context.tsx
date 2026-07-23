@@ -13,7 +13,6 @@ import { createClient } from '@/lib/supabase/client';
 import {
   ACCOUNT_EXISTS_MESSAGE,
   getAuthRedirectUrl,
-  isDuplicateSignupUser,
   isEmailConfirmed,
   mapAuthError,
   UNVERIFIED_LOGIN_MESSAGE,
@@ -178,43 +177,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = getSupabase();
     if (!supabase) return { error: 'Auth is not configured', code: 'error' };
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: getAuthRedirectUrl(),
-      },
-    });
+    // Create via server (service role) so signup does not depend on confirmation SMTP.
+    let createRes: Response;
+    try {
+      createRes = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      return { error: 'Could not create account. Please try again.', code: 'error' };
+    }
+
+    const createBody = (await createRes.json().catch(() => null)) as {
+      error?: string;
+      code?: string;
+      ok?: boolean;
+    } | null;
+
+    if (!createRes.ok) {
+      if (createBody?.code === 'existing_user' || createRes.status === 409) {
+        return {
+          error: createBody?.error || ACCOUNT_EXISTS_MESSAGE,
+          code: 'existing_user',
+        };
+      }
+      return {
+        error: createBody?.error || 'Could not create account. Please try again.',
+        code: 'error',
+      };
+    }
+
+    // Account is confirmed server-side — sign in immediately.
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       const mapped = mapAuthError(error);
       return {
         error: mapped.message,
-        code: mapped.isRateLimited
-          ? 'rate_limited'
-          : mapped.isExistingUser
-            ? 'existing_user'
-            : 'error',
+        code: mapped.isRateLimited ? 'rate_limited' : 'error',
       };
-    }
-
-    // Supabase often returns 200 with empty identities when the email is taken
-    if (isDuplicateSignupUser(data.user)) {
-      await supabase.auth.signOut();
-      clearAuthState();
-      return { error: ACCOUNT_EXISTS_MESSAGE, code: 'existing_user' };
-    }
-
-    if (!data.session) {
-      await supabase.auth.signOut();
-      clearAuthState();
-      return { error: null, status: 'verification_required' };
-    }
-
-    if (data.user && !isEmailConfirmed(data.user)) {
-      await supabase.auth.signOut();
-      clearAuthState();
-      return { error: null, status: 'verification_required' };
     }
 
     if (data.user) {
@@ -222,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null, status: 'logged_in' };
     }
 
-    return { error: null, status: 'verification_required' };
+    return { error: 'Account created, but login failed. Try logging in.', code: 'error' };
   };
 
   const signIn = async (email: string, password: string): Promise<SignInResult> => {
