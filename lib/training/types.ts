@@ -1,4 +1,10 @@
 import type { AccessTier } from '@/lib/accessTier';
+import type {
+  PuzzleCurrentLevel,
+  PuzzlePathStats,
+  PuzzlePublic,
+  PuzzleSegmentState,
+} from '@/lib/puzzles/types';
 import type { LevelProgressStatus } from './progress';
 
 export interface TrainingTier {
@@ -26,6 +32,8 @@ export interface TrainingLevel {
   is_paid_only: boolean;
   access_tier?: AccessTier | null;
   sort_order: number;
+  puzzle_image_id?: string | null;
+  segment_index?: number | null;
 }
 
 export interface Passage {
@@ -64,6 +72,12 @@ export interface TrainingPathResponse {
     is_logged_in: boolean;
     is_paid: boolean;
   };
+  puzzle: PuzzlePublic | null;
+  segments: PuzzleSegmentState[];
+  newly_revealed_segment: number | null;
+  current_level: PuzzleCurrentLevel | null;
+  puzzle_complete: boolean;
+  track_stats: PuzzlePathStats;
 }
 
 export interface TrainingLevelDetailResponse {

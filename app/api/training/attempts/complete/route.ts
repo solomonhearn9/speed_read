@@ -10,6 +10,7 @@ import {
   calculateComprehensionPct,
   calculateXpAward,
 } from '@/lib/training/xp';
+import { recordVerifiedScoreEvent } from '@/lib/scoring/recordScore';
 import type { AttemptCompleteResult } from '@/lib/training/types';
 
 interface CompleteBody {
@@ -303,6 +304,23 @@ export async function POST(request: Request) {
       xpResult.xp,
       xpResult.passed
     );
+
+    // League-ready scoring: verified (2/3+) only — unverified writes nothing.
+    if (xpResult.passed) {
+      try {
+        await recordVerifiedScoreEvent(service, {
+          userId: user.id,
+          levelId: levelId,
+          track: 'adult',
+          questionsCorrect,
+          questionsTotal,
+          wpm: actualWpm,
+          baseXp: level.xp_pass,
+        });
+      } catch (scoreErr) {
+        console.error('[training/attempts/complete] score_event', scoreErr);
+      }
+    }
 
     let nextLevel: Awaited<ReturnType<typeof getNextLevel>> = null;
 

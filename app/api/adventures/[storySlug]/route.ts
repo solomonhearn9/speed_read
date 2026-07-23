@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server';
 import { resolveChapterStatus } from '@/lib/adventures/progress';
 import { resolveAccessTier } from '@/lib/accessTier';
 import { fetchIsPaidProfile } from '@/lib/profile-server';
+import {
+  fetchActivePuzzle,
+  fetchNextPuzzleId,
+  toPublicPuzzle,
+} from '@/lib/puzzles';
+import type { PuzzleCurrentLevel, PuzzleSegmentState } from '@/lib/puzzles/types';
 import type { AdventureStoryResponse, ChapterWithStatus } from '@/lib/adventures/types';
 
 export const dynamic = 'force-dynamic';
@@ -87,20 +93,103 @@ export async function GET(
       };
     });
 
-    let profileData = { total_xp: 0, reader_level: 1, is_logged_in: !!user, is_paid: isPaid };
+    let profileData = {
+      total_xp: 0,
+      reader_level: 1,
+      current_streak: 0,
+      is_logged_in: !!user,
+      is_paid: isPaid,
+    };
     if (user) {
       const { data: profile } = await service
         .from('profiles')
-        .select('total_xp, reader_level')
+        .select('total_xp, reader_level, current_streak')
         .eq('id', user.id)
         .single();
       if (profile) {
         profileData = {
           total_xp: profile.total_xp ?? 0,
           reader_level: profile.reader_level ?? 1,
+          current_streak: profile.current_streak ?? 0,
           is_logged_in: true,
           is_paid: isPaid,
         };
+      }
+    }
+
+    const puzzleId =
+      chaptersWithStatus.find((c) => c.puzzle_image_id)?.puzzle_image_id ?? null;
+    const puzzle = await fetchActivePuzzle(service, 'kids', puzzleId);
+    const nextPuzzleId = puzzle
+      ? await fetchNextPuzzleId(service, 'kids', puzzle)
+      : null;
+
+    const segments: PuzzleSegmentState[] = chaptersWithStatus.map((ch) => ({
+      segment_index: ch.segment_index ?? ch.chapter_number,
+      revealed: ch.status === 'completed',
+      level_id: ch.id,
+      level_number: ch.chapter_number,
+    }));
+
+    const revealedCount = segments.filter((s) => s.revealed).length;
+    const puzzleComplete = !!puzzle && revealedCount >= puzzle.segment_count;
+
+    const currentCh =
+      chaptersWithStatus.find((c) => c.status === 'unlocked') ??
+      (puzzleComplete
+        ? null
+        : chaptersWithStatus.find((c) => c.status === 'locked') ?? null);
+
+    const currentLevel: PuzzleCurrentLevel | null = currentCh
+      ? {
+          id: currentCh.id,
+          level_number: currentCh.chapter_number,
+          href:
+            currentCh.status === 'locked'
+              ? null
+              : `/adventures/${story.slug}/${currentCh.slug}`,
+          access_tier: currentCh.access_tier,
+          status: currentCh.status === 'completed' ? 'completed' : currentCh.status,
+          target_wpm: currentCh.target_wpm,
+          xp_reward: currentCh.xp_reward + currentCh.completion_bonus_xp,
+          title: currentCh.title,
+        }
+      : null;
+
+    let newlyRevealed: number | null = null;
+    if (user) {
+      const { data: latestPass } = await service
+        .from('adventure_chapter_attempts')
+        .select('chapter_id, completed_at')
+        .eq('user_id', user.id)
+        .eq('story_id', story.id)
+        .eq('passed', true)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestPass?.completed_at) {
+        const ageMs = Date.now() - new Date(latestPass.completed_at).getTime();
+        if (ageMs < 2 * 60 * 1000) {
+          const ch = chaptersWithStatus.find((c) => c.id === latestPass.chapter_id);
+          newlyRevealed = ch?.segment_index ?? ch?.chapter_number ?? null;
+        }
+      }
+    }
+
+    // Average WPM from best passed attempts for this story
+    let averageWpm: number | null = null;
+    if (user) {
+      const { data: attempts } = await service
+        .from('adventure_chapter_attempts')
+        .select('words_read, elapsed_seconds')
+        .eq('user_id', user.id)
+        .eq('story_id', story.id)
+        .eq('passed', true);
+      const wpms = (attempts ?? [])
+        .filter((a) => a.words_read && a.elapsed_seconds && a.elapsed_seconds > 0)
+        .map((a) => Math.round((a.words_read! / a.elapsed_seconds!) * 60));
+      if (wpms.length) {
+        averageWpm = wpms.reduce((s, n) => s + n, 0) / wpms.length;
       }
     }
 
@@ -116,6 +205,19 @@ export async function GET(
           }
         : null,
       profile: profileData,
+      puzzle: puzzle
+        ? toPublicPuzzle(puzzle, { revealedCount, nextPuzzleId })
+        : null,
+      segments,
+      newly_revealed_segment: newlyRevealed,
+      current_level: currentLevel,
+      puzzle_complete: puzzleComplete,
+      track_stats: {
+        total_levels: chaptersWithStatus.length,
+        levels_completed: revealedCount,
+        average_wpm: averageWpm,
+        current_streak: profileData.current_streak,
+      },
     };
 
     return NextResponse.json(response);

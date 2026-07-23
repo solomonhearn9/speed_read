@@ -1,71 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { trackAdventureEvent } from '@/lib/adventures/analytics';
 import { STORY_SLUG } from '@/lib/adventures/constants';
 import type { AdventureStoryResponse } from '@/lib/adventures/types';
-import { mapConfigs } from '@/lib/maps/mapConfigs';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
-import MapProgressScreen, {
-  type MapNodeData,
-  type MapStatToken,
-} from '@/components/map/MapProgressScreen';
-
-const config = mapConfigs.kids;
-
-/**
- * Merge the kids map config (visual layout + fallback meta) with live chapter
- * data from /api/adventures/[storySlug]. Config node N maps to chapter N.
- */
-function buildNodes(data: AdventureStoryResponse): MapNodeData[] {
-  const chapters = data.chapters;
-  const currentId = chapters.find((c) => c.status === 'unlocked')?.id ?? null;
-
-  return config.levels.map((meta, i) => {
-    const ch = chapters[i];
-    if (!ch) {
-      return {
-        id: meta.id,
-        levelNumber: meta.levelNumber,
-        title: meta.title,
-        description: meta.description,
-        region: meta.region,
-        targetWpm: meta.targetWpm,
-        xpReward: meta.xpReward,
-        status: 'coming-soon' as const,
-        href: null,
-        stars: 0,
-      };
-    }
-
-    const status =
-      ch.status === 'unlocked'
-        ? ch.id === currentId
-          ? ('current' as const)
-          : ('unlocked' as const)
-        : ch.status;
-
-    return {
-      id: meta.id,
-      levelNumber: ch.chapter_number,
-      title: ch.title,
-      description: meta.description,
-      region: meta.region,
-      targetWpm: ch.target_wpm,
-      xpReward: ch.xp_reward + ch.completion_bonus_xp,
-      status,
-      accessTier: ch.access_tier,
-      href:
-        ch.status === 'locked'
-          ? null
-          : `/adventures/${data.story.slug}/${ch.slug}`,
-      stars: ch.status === 'completed' ? 3 : 0,
-    };
-  });
-}
+import PuzzleRevealScreen from '@/components/puzzle/PuzzleRevealScreen';
+import '@/components/puzzle/puzzle-theme.css';
 
 export default function AdventureHome() {
   const { user, profile } = useAuth();
@@ -91,21 +35,23 @@ export default function AdventureHome() {
     void load();
   }, [user, profile]);
 
-  const nodes = useMemo(() => (data ? buildNodes(data) : []), [data]);
-
   if (loading) {
     return (
-      <div className="map-screen map-theme-kids min-h-screen flex items-center justify-center">
-        <p className="text-slate-400 text-sm">Loading your adventure...</p>
+      <div data-theme="challenge" className="puzzle-screen puzzle-theme-kids min-h-screen flex items-center justify-center">
+        <div className="absolute inset-0 challenge-glow pointer-events-none" aria-hidden="true" />
+        <p className="relative challenge-text-muted text-sm">Loading your adventure...</p>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="map-screen map-theme-kids min-h-screen flex flex-col items-center justify-center gap-4 p-6">
-        <p className="text-red-400">Could not load adventures. Apply migration 005_adventures.sql.</p>
-        <Link href="/" className="text-slate-400 hover:text-white text-sm">
+      <div data-theme="challenge" className="puzzle-screen puzzle-theme-kids min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <div className="absolute inset-0 challenge-glow pointer-events-none" aria-hidden="true" />
+        <p className="relative text-red-400">
+          Could not load adventures. Apply migration 007_puzzles_and_scoring.sql.
+        </p>
+        <Link href="/" className="relative challenge-text-muted hover:text-white text-sm">
           ← Back home
         </Link>
       </div>
@@ -113,25 +59,29 @@ export default function AdventureHome() {
   }
 
   const chaptersDone = data.progress?.chapters_completed ?? 0;
-  const stats: MapStatToken[] = [
+  const stats = [
     { id: 'xp', icon: '✦', value: data.profile.total_xp.toLocaleString(), label: 'Total XP' },
     {
       id: 'gems',
-      icon: '💎',
+      icon: '◆',
       value: `${chaptersDone}/${data.story.total_chapters}`,
       label: 'Chapters completed',
     },
-    { id: 'level', icon: '🐉', value: `Lv ${data.profile.reader_level}`, label: 'Reader level' },
+    { id: 'level', icon: '★', value: `Lv ${data.profile.reader_level}`, label: 'Reader level' },
   ];
 
   return (
     <>
-      <MapProgressScreen
-        config={config}
-        nodes={nodes}
+      <PuzzleRevealScreen
+        track="kids"
+        puzzle={data.puzzle}
+        segments={data.segments}
+        currentLevel={data.current_level}
+        puzzleComplete={data.puzzle_complete}
+        newlyRevealedSegment={data.newly_revealed_segment}
+        trackStats={data.track_stats}
         stats={stats}
         backHref="/"
-        guestBanner={null}
         onGuestSignup={
           data.profile.is_logged_in ? undefined : () => setShowAuthModal(true)
         }
@@ -142,6 +92,7 @@ export default function AdventureHome() {
           }
           setShowUpgradeModal(true);
         }}
+        onStartNextPuzzle={null}
       />
       <UpgradeModal
         isOpen={showUpgradeModal}

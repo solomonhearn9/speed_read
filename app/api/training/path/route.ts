@@ -5,6 +5,12 @@ export const dynamic = 'force-dynamic';
 import { ensureFirstLevelUnlocked, resolveProgressStatus } from '@/lib/training/progress';
 import { resolveAccessTier } from '@/lib/accessTier';
 import { fetchIsPaidProfile } from '@/lib/profile-server';
+import {
+  fetchActivePuzzle,
+  fetchNextPuzzleId,
+  toPublicPuzzle,
+} from '@/lib/puzzles';
+import type { PuzzleCurrentLevel, PuzzleSegmentState } from '@/lib/puzzles/types';
 import type { LevelWithProgress, TrainingPathResponse } from '@/lib/training/types';
 
 export async function GET() {
@@ -178,12 +184,100 @@ export async function GET() {
       return { ...tier, levels: tierLevels };
     });
 
+    const allLevels = tiersWithLevels.flatMap((t) => t.levels);
+    const puzzleId =
+      allLevels.find((l) => l.puzzle_image_id)?.puzzle_image_id ?? null;
+    const puzzle = await fetchActivePuzzle(service, 'adult', puzzleId);
+    const nextPuzzleId = puzzle
+      ? await fetchNextPuzzleId(service, 'adult', puzzle)
+      : null;
+
+    const segments: PuzzleSegmentState[] = allLevels.map((level) => {
+      const segmentIndex = level.segment_index ?? level.level_number;
+      const revealed =
+        level.status === 'completed' || level.status === 'mastered';
+      return {
+        segment_index: segmentIndex,
+        revealed,
+        level_id: level.id,
+        level_number: level.level_number,
+      };
+    });
+
+    const revealedCount = segments.filter((s) => s.revealed).length;
+    const puzzleComplete = !!puzzle && revealedCount >= puzzle.segment_count;
+
+    const currentApi =
+      allLevels.find((l) => l.status === 'unlocked') ??
+      (puzzleComplete ? null : allLevels.find((l) => l.status === 'locked') ?? null);
+
+    const currentLevel: PuzzleCurrentLevel | null = currentApi
+      ? {
+          id: currentApi.id,
+          level_number: currentApi.level_number,
+          href:
+            currentApi.status === 'locked' ? null : `/train/${currentApi.id}`,
+          access_tier: currentApi.access_tier,
+          status: currentApi.status,
+          target_wpm: currentApi.target_wpm,
+          xp_reward: currentApi.xp_pass,
+          title: currentApi.title,
+        }
+      : null;
+
+    const completedWithWpm = allLevels.filter(
+      (l) =>
+        (l.status === 'completed' || l.status === 'mastered') &&
+        l.best_wpm != null
+    );
+    const averageWpm =
+      completedWithWpm.length > 0
+        ? completedWithWpm.reduce((sum, l) => sum + (l.best_wpm ?? 0), 0) /
+          completedWithWpm.length
+        : null;
+
+    // Highlight the highest newly completed segment for entry animation.
+    let newlyRevealed: number | null = null;
+    if (user) {
+      const { data: latestPass } = await service
+        .from('level_attempts')
+        .select('level_id, completed_at')
+        .eq('user_id', user.id)
+        .eq('passed', true)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestPass?.completed_at) {
+        const ageMs = Date.now() - new Date(latestPass.completed_at).getTime();
+        if (ageMs < 2 * 60 * 1000) {
+          const lvl = allLevels.find((l) => l.id === latestPass.level_id);
+          newlyRevealed = lvl?.segment_index ?? lvl?.level_number ?? null;
+        }
+      }
+    }
+
     const response: TrainingPathResponse = {
       tiers: tiersWithLevels,
       profile: {
         ...profileProgress,
         is_logged_in: !!user,
         is_paid: isPaid,
+      },
+      puzzle: puzzle
+        ? toPublicPuzzle(puzzle, {
+            revealedCount,
+            nextPuzzleId,
+          })
+        : null,
+      segments,
+      newly_revealed_segment: newlyRevealed,
+      current_level: currentLevel,
+      puzzle_complete: puzzleComplete,
+      track_stats: {
+        total_levels: allLevels.length,
+        levels_completed: revealedCount,
+        average_wpm: averageWpm,
+        current_streak: profileProgress.current_streak,
       },
     };
 

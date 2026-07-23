@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { getContinueGate } from '@/lib/accessTier';
 import { checkMapEntryAccess, fetchIsPaidProfile } from '@/lib/profile-server';
 import { gradeAnswers, updateProfileXp } from '@/lib/adventures/progress';
+import { calculateActualWpm } from '@/lib/training/xp';
+import { recordVerifiedScoreEvent } from '@/lib/scoring/recordScore';
 import type { AdventureCompleteResult } from '@/lib/adventures/types';
 
 export const dynamic = 'force-dynamic';
@@ -187,6 +189,23 @@ export async function POST(request: Request) {
     );
 
     const profileUpdate = await updateProfileXp(service, user.id, xpAwarded);
+
+    if (grade.passed) {
+      try {
+        const actualWpm = calculateActualWpm(words_read, elapsed_seconds);
+        await recordVerifiedScoreEvent(service, {
+          userId: user.id,
+          levelId: chapterId,
+          track: 'kids',
+          questionsCorrect: grade.correct,
+          questionsTotal: grade.total,
+          wpm: actualWpm,
+          baseXp: chapter.xp_reward,
+        });
+      } catch (scoreErr) {
+        console.error('[adventures/attempts/complete] score_event', scoreErr);
+      }
+    }
 
     const continueGate = getContinueGate(
       nextChapter?.chapter_number ?? null,

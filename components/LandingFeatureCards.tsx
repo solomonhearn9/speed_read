@@ -103,7 +103,7 @@ export default function LandingFeatureCards() {
         className="landing-feature-card landing-feature-card--kids group md:col-span-2"
       >
         <div className="landing-feature-card__bg">
-          <Image src="/kids_card.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 40vw" />
+          <Image src="/kids_hero.png" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 40vw" />
           <div className="landing-feature-card__overlay landing-feature-card__overlay--kids" />
         </div>
 

@@ -26,6 +26,10 @@ export interface Profile {
   longest_streak?: number;
   last_training_date?: string | null;
   challenge_intent?: string | null;
+  /** Leaderboard handle — never email. Auto-generated animal+number at signup. */
+  display_name?: string | null;
+  /** Reserved for classroom pilot leagues. */
+  class_code?: string | null;
   created_at: string;
   updated_at: string;
 }
